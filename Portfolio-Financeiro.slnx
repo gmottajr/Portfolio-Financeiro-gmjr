@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/01-Api/">
+    <Project Path="rsc/Portfolio-Financeiro-WebApplication/PortfolioAnalytics.WebApi.csproj" />
+  </Folder>
+  <Folder Name="/02-Application/">
+    <Project Path="rsc/Application/Application.csproj" />
+  </Folder>
+  <Folder Name="/03-Infra/">
+    <Project Path="rsc/DAL/Persistence.csproj" />
+    <Project Path="rsc/IoC/IoC.csproj" />
+  </Folder>
+  <Folder Name="/04-Domain/">
+    <Project Path="rsc/Models/Models.csproj" Id="b5b7d32f-04f5-4109-a26d-9416f4ce0c97" />
+  </Folder>
+  <Folder Name="/05-Core/">
+    <Project Path="rsc/Abstractions/Abstractions.csproj" Id="ac59a47b-1871-4b6f-bd7b-516ea136f547" />
+    <Project Path="rsc/Core/SharedKernel.csproj" Id="f0928205-a138-44ca-ab00-517679e59a04" />
+  </Folder>
+  <Folder Name="/06-Tests/">
+    <Project Path="tests/Abstractions.Tests/Abstractions.Tests.csproj" Id="7b723ac1-8df7-48ba-9d3d-4da9ca9eafdd" />
+    <Project Path="tests/Api.Tests/Api.Tests.csproj" Id="3434be53-b5f4-4391-8e0e-db2ee5280b58" />
+    <Project Path="tests/Application.Tests/Application.Tests.csproj" Id="5cd48fb2-8f2c-4685-8107-d6929f7adc74" />
+    <Project Path="tests/Core.Tests/SharedKernel.Tests.csproj" Id="7d7da343-32d9-46dc-bdb3-e28ca4dcecad" />
+    <Project Path="tests/DAL.Tests/Persistence.Tests.csproj" Id="5d64111a-309e-4496-ac3f-385c52021c70" />
+    <Project Path="tests/Domain.Tests/Domain.Tests.csproj" Id="f38f319e-b546-4ce4-a591-f9b0483f7dd5" />
+    <Project Path="tests/IoC.Tests/IoC.Tests.csproj" Id="866b9442-9501-4c58-a975-52df63182fb2" />
+  </Folder>
+</Solution>

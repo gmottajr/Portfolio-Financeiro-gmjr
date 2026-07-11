@@ -1,0 +1,251 @@
+Listagem de caminhos de pasta
+O n£mero de s‚rie do volume ‚ FEFC-809C
+C:.
++---.github
+|   \---workflows
++---.vs
+|   +---Portfolio-Financeiro-gmjr
+|   |   \---CopilotIndices
+|   |       \---18.7.1253.33689
+|   +---Portfolio-Financeiro-gmjr.slnx
+|   |   +---copilot-chat
+|   |   |   \---4e6d45d9
+|   |   |       \---sessions
+|   |   +---FileContentIndex
+|   |   \---v18
+|   +---Portfolio-Financeiro.slnx
+|   |   +---config
+|   |   +---DesignTimeBuild
+|   |   +---FileContentIndex
+|   |   \---v18
+|   \---ProjectEvaluation
++---rsc
+|   +---Abstractions
+|   |   +---01-Api
+|   |   +---02-Application
+|   |   +---03-Infra
+|   |   +---04-Domain
+|   |   +---05-Core
+|   |   +---bin
+|   |   |   \---Debug
+|   |   |       \---net8.0
+|   |   \---obj
+|   |       \---Debug
+|   |           \---net8.0
+|   |               +---ref
+|   |               \---refint
+|   +---Application
+|   |   +---bin
+|   |   |   \---Debug
+|   |   |       \---net8.0
+|   |   \---obj
+|   |       \---Debug
+|   |           \---net8.0
+|   |               +---ref
+|   |               \---refint
+|   +---Core
+|   |   +---bin
+|   |   |   \---Debug
+|   |   |       \---net8.0
+|   |   \---obj
+|   |       \---Debug
+|   |           \---net8.0
+|   |               +---ref
+|   |               \---refint
+|   +---DAL
+|   |   +---bin
+|   |   |   \---Debug
+|   |   |       \---net8.0
+|   |   +---Data
+|   |   +---obj
+|   |   |   \---Debug
+|   |   |       \---net8.0
+|   |   |           +---ref
+|   |   |           \---refint
+|   |   \---Repositories
+|   +---IoC
+|   |   +---bin
+|   |   |   \---Debug
+|   |   |       \---net8.0
+|   |   \---obj
+|   |       \---Debug
+|   |           \---net8.0
+|   |               +---ref
+|   |               \---refint
+|   +---Models
+|   |   +---bin
+|   |   |   \---Debug
+|   |   |       \---net8.0
+|   |   \---obj
+|   |       \---Debug
+|   |           \---net8.0
+|   |               +---ref
+|   |               \---refint
+|   \---Portfolio-Financeiro-WebApplication
+|       +---bin
+|       |   \---Debug
+|       |       \---net8.0
+|       +---Controllers
+|       +---obj
+|       |   \---Debug
+|       |       \---net8.0
+|       |           +---EndpointInfo
+|       |           +---ref
+|       |           +---refint
+|       |           \---staticwebassets
+|       \---Properties
+\---tests
+    +---Abstractions.Tests
+    |   +---bin
+    |   |   \---Debug
+    |   |       \---net8.0
+    |   |           +---cs
+    |   |           +---de
+    |   |           +---es
+    |   |           +---fr
+    |   |           +---it
+    |   |           +---ja
+    |   |           +---ko
+    |   |           +---pl
+    |   |           +---pt-BR
+    |   |           +---ru
+    |   |           +---tr
+    |   |           +---zh-Hans
+    |   |           \---zh-Hant
+    |   \---obj
+    |       \---Debug
+    |           \---net8.0
+    |               +---ref
+    |               \---refint
+    +---Api.Tests
+    |   +---bin
+    |   |   \---Debug
+    |   |       \---net8.0
+    |   |           +---cs
+    |   |           +---de
+    |   |           +---es
+    |   |           +---fr
+    |   |           +---it
+    |   |           +---ja
+    |   |           +---ko
+    |   |           +---pl
+    |   |           +---pt-BR
+    |   |           +---ru
+    |   |           +---tr
+    |   |           +---zh-Hans
+    |   |           \---zh-Hant
+    |   \---obj
+    |       \---Debug
+    |           \---net8.0
+    |               +---ref
+    |               \---refint
+    +---Application.Tests
+    |   +---bin
+    |   |   \---Debug
+    |   |       \---net8.0
+    |   |           +---cs
+    |   |           +---de
+    |   |           +---es
+    |   |           +---fr
+    |   |           +---it
+    |   |           +---ja
+    |   |           +---ko
+    |   |           +---pl
+    |   |           +---pt-BR
+    |   |           +---ru
+    |   |           +---tr
+    |   |           +---zh-Hans
+    |   |           \---zh-Hant
+    |   \---obj
+    |       \---Debug
+    |           \---net8.0
+    |               +---ref
+    |               \---refint
+    +---Core.Tests
+    |   +---bin
+    |   |   \---Debug
+    |   |       \---net8.0
+    |   |           +---cs
+    |   |           +---de
+    |   |           +---es
+    |   |           +---fr
+    |   |           +---it
+    |   |           +---ja
+    |   |           +---ko
+    |   |           +---pl
+    |   |           +---pt-BR
+    |   |           +---ru
+    |   |           +---tr
+    |   |           +---zh-Hans
+    |   |           \---zh-Hant
+    |   \---obj
+    |       \---Debug
+    |           \---net8.0
+    |               +---ref
+    |               \---refint
+    +---DAL.Tests
+    |   +---bin
+    |   |   \---Debug
+    |   |       \---net8.0
+    |   |           +---cs
+    |   |           +---de
+    |   |           +---es
+    |   |           +---fr
+    |   |           +---it
+    |   |           +---ja
+    |   |           +---ko
+    |   |           +---pl
+    |   |           +---pt-BR
+    |   |           +---ru
+    |   |           +---tr
+    |   |           +---zh-Hans
+    |   |           \---zh-Hant
+    |   \---obj
+    |       \---Debug
+    |           \---net8.0
+    |               +---ref
+    |               \---refint
+    +---Domain.Tests
+    |   +---bin
+    |   |   \---Debug
+    |   |       \---net8.0
+    |   |           +---cs
+    |   |           +---de
+    |   |           +---es
+    |   |           +---fr
+    |   |           +---it
+    |   |           +---ja
+    |   |           +---ko
+    |   |           +---pl
+    |   |           +---pt-BR
+    |   |           +---ru
+    |   |           +---tr
+    |   |           +---zh-Hans
+    |   |           \---zh-Hant
+    |   \---obj
+    |       \---Debug
+    |           \---net8.0
+    |               +---ref
+    |               \---refint
+    \---IoC.Tests
+        +---bin
+        |   \---Debug
+        |       \---net8.0
+        |           +---cs
+        |           +---de
+        |           +---es
+        |           +---fr
+        |           +---it
+        |           +---ja
+        |           +---ko
+        |           +---pl
+        |           +---pt-BR
+        |           +---ru
+        |           +---tr
+        |           +---zh-Hans
+        |           \---zh-Hant
+        \---obj
+            \---Debug
+                \---net8.0
+                    +---ref
+                    \---refint
