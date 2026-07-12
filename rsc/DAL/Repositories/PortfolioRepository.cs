@@ -1,0 +1,38 @@
+using Abstractions._02_Application.Services;
+using DAL.Data;
+using DAL.Repositories.Abstractions;
+using DAL.Repositories.Contracts;
+using Microsoft.EntityFrameworkCore;
+using Models;
+
+namespace DAL.Repositories;
+
+/// <summary>
+/// EF Core repository for portfolio aggregates.
+/// </summary>
+public sealed class PortfolioRepository(
+    PortfolioDbContext context,
+    IDomainEventDispatcher eventDispatcher)
+    : EfDataRepositoryBase<Portfolio, int>(context, eventDispatcher), IPortfolioRepository
+{
+    /// <inheritdoc />
+    public Task<Portfolio?> GetWithPositionsAsync(int id, CancellationToken ct = default)
+    {
+        return DbSet
+            .Include(portfolio => portfolio.Positions)
+            .FirstOrDefaultAsync(portfolio => portfolio.Id == id, ct);
+    }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Portfolio>> GetByUserIdAsync(
+        string userId,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(userId);
+
+        return await DbSet
+            .Include(portfolio => portfolio.Positions)
+            .Where(portfolio => portfolio.UserId == userId)
+            .ToListAsync(ct);
+    }
+}

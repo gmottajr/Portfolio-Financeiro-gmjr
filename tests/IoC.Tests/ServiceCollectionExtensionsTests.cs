@@ -1,6 +1,8 @@
 using Abstractions._02_Application.Services;
 using Abstractions._04_Domain;
 using DAL.Data;
+using DAL.Repositories;
+using DAL.Repositories.Contracts;
 using IoC;
 using Microsoft.Extensions.DependencyInjection;
 using Models;
@@ -87,6 +89,19 @@ public sealed class ServiceCollectionExtensionsTests
         await dispatcher.DispatchAsync([domainEvent]);
 
         Assert.Same(domainEvent, handler.HandledEvent);
+    }
+
+    [Fact]
+    public void AddPortfolioPersistence_RegistersAggregateRepositories()
+    {
+        var services = new ServiceCollection();
+        services.AddPortfolioPersistence();
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+
+        Assert.IsType<AssetRepository>(scope.ServiceProvider.GetRequiredService<IAssetRepository>());
+        Assert.IsType<PortfolioRepository>(scope.ServiceProvider.GetRequiredService<IPortfolioRepository>());
     }
 
     private sealed class TestDomainEvent : DomainEventBase;
