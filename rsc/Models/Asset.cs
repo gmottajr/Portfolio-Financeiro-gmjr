@@ -33,6 +33,14 @@ public sealed class Asset : AggregateRoot<AssetSymbol>
     private readonly List<PricePoint> _priceHistory = new();
     public IReadOnlyList<PricePoint> PriceHistory => _priceHistory.AsReadOnly();
 
+    // Necessário para materialização pelo Entity Framework Core.
+    private Asset()
+    {
+        Name = null!;
+        Type = null!;
+        Sector = null!;
+    }
+
     public Asset(AssetSymbol symbol, string name, string type, string sector, Money currentPrice, DateTime lastUpdated)
     {
         if (string.IsNullOrWhiteSpace(name))

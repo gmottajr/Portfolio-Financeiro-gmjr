@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Globalization;
 using SharedKernel.Exceptions;
 using SharedKernel.ValueObjects;
 
@@ -11,289 +6,216 @@ namespace SharedKernel.Tests.ValueObjects;
 
 public class Moneytests
 {
-    // ---------------------------------------------------------------------
-    // Construção / Invariantes
-    // ---------------------------------------------------------------------
+    private const string NegativeMoneyMessage = "Money cannot be negative.";
 
-    [Fact]
-    public void Constructor_WithPositiveValue_SetsValueCorrectly()
+    // =========================================================================
+    // Construção
+    // =========================================================================
+
+    [Theory(DisplayName = "AlternativePath: valores válidos (zero e positivos) são aceitos")]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(150.75, 150.75)]
+    [InlineData(999999.99, 999999.99)]
+    public void Constructor_WithValidValue_AlternativePath_SetsValueCorrectly(decimal input, decimal expected)
     {
-        // Arrange & Act
-        var money = new Money(150.75m);
-
-        // Assert
-        Assert.Equal(150.75m, money.Value);
-    }
-
-    [Fact]
-    public void Constructor_WithZero_SetsValueToZero()
-    {
-        // Arrange & Act
-        var money = new Money(0m);
-
-        // Assert
-        Assert.Equal(0m, money.Value);
-    }
-
-    [Fact]
-    public void Constructor_WithNegativeValue_ThrowsDomainException()
-    {
-        // Arrange & Act
-        Action act = () => new Money(-10m);
-
-        // Assert
-        Assert.Throws<DomainException>(act);
-    }
-
-    [Theory]
-    [InlineData(10.125, 10.12)] // dígito de arredondamento (1) é ímpar -> arredonda para o par mais próximo abaixo (2)... 
-    [InlineData(10.135, 10.14)] // banker's rounding: 3 -> par acima (4)
-    [InlineData(10.005, 10.00)] // 0 já é par, mantém
-    [InlineData(10.015, 10.02)] // 1 é ímpar, arredonda para 2
-    public void Constructor_RoundsValueToTwoDecimalPlaces_UsingBankersRounding(decimal input, decimal expected)
-    {
-        // Arrange & Act
         var money = new Money(input);
 
-        // Assert
         Assert.Equal(expected, money.Value);
     }
 
-    [Fact]
-    public void Constructor_WithMoreThanTwoDecimalPlaces_RoundsToTwoDecimalPlaces()
+    [Theory(DisplayName = "ExceptionalPath: valores negativos violam o invariante e lançam DomainException")]
+    [InlineData(-0.01)]
+    [InlineData(-1)]
+    [InlineData(-100.5)]
+    [InlineData(-9999999.99)]
+    public void Constructor_WithNegativeValue_ExceptionalPath_ThrowsDomainException(decimal value)
     {
-        // Arrange & Act
-        var money = new Money(99.999m);
+        Action act = () => new Money(value);
 
-        // Assert
-        Assert.Equal(100.00m, money.Value);
+        var ex = Assert.Throws<DomainException>(act);
+        Assert.Equal(NegativeMoneyMessage, ex.Message);
     }
 
-    // ---------------------------------------------------------------------
-    // Zero
-    // ---------------------------------------------------------------------
-
-    [Fact]
-    public void Zero_ReturnsMoneyInstanceWithValueZero()
+    [Theory(DisplayName = "AlternativePath: valor é arredondado para 2 casas usando banker's rounding (ToEven)")]
+    [InlineData(10.125, 10.12)] // dígito 5 é o ponto médio; dígito anterior (2) já é par -> mantém
+    [InlineData(10.135, 10.14)] // dígito anterior (3) é ímpar -> sobe para o par (4)
+    [InlineData(10.005, 10.00)] // dígito anterior (0) já é par -> mantém
+    [InlineData(10.015, 10.02)] // dígito anterior (1) é ímpar -> sobe para o par (2)
+    [InlineData(99.995, 100.00)] // ponto médio entre 99.99 (ímpar) e 100.00 (par) -> sobe
+    [InlineData(99.999, 100.00)] // não é ponto médio, arredondamento comum para cima
+    public void Constructor_RoundsToTwoDecimalPlaces_AlternativePath_UsesBankersRounding(decimal input, decimal expected)
     {
-        // Arrange & Act
+        var money = new Money(input);
+
+        Assert.Equal(expected, money.Value);
+    }
+
+    // =========================================================================
+    // Zero
+    // =========================================================================
+
+    [Fact(DisplayName = "AlternativePath: Money.Zero representa o valor zero")]
+    public void Zero_AlternativePath_ReturnsMoneyInstanceWithValueZero()
+    {
         var zero = Money.Zero;
 
-        // Assert
         Assert.Equal(0m, zero.Value);
     }
 
-    // ---------------------------------------------------------------------
+    // =========================================================================
     // Operador +
-    // ---------------------------------------------------------------------
+    // =========================================================================
 
-    [Fact]
-    public void Addition_TwoPositiveValues_ReturnsSum()
+    [Theory(DisplayName = "AlternativePath: soma de dois valores não-negativos retorna o total esperado")]
+    [InlineData(100.50, 50.25, 150.75)]
+    [InlineData(0, 100, 100)]
+    [InlineData(0, 0, 0)]
+    [InlineData(10.005, 10.005, 20.00)] // cada parcela arredonda para 10.00 antes de somar
+    [InlineData(99.995, 0.005, 100.00)] // 99.995->100.00 (par) e 0.005->0.00 (par)
+    public void Addition_AlternativePath_ReturnsSum(decimal left, decimal right, decimal expected)
     {
-        // Arrange
-        var a = new Money(100.50m);
-        var b = new Money(50.25m);
+        var a = new Money(left);
+        var b = new Money(right);
 
-        // Act
         var result = a + b;
 
-        // Assert
-        Assert.Equal(150.75m, result.Value);
+        Assert.Equal(expected, result.Value);
     }
+    // Não existe "ExceptionalPath" para +, pois a soma de dois valores não-negativos
+    // nunca pode violar o invariante de não-negatividade.
 
-    [Fact]
-    public void Addition_WithZero_ReturnsOriginalValue()
-    {
-        // Arrange
-        var a = new Money(100m);
-
-        // Act
-        var result = a + Money.Zero;
-
-        // Assert
-        Assert.Equal(100m, result.Value);
-    }
-
-    // ---------------------------------------------------------------------
+    // =========================================================================
     // Operador -
-    // ---------------------------------------------------------------------
+    // =========================================================================
 
-    [Fact]
-    public void Subtraction_WhenLeftIsGreaterThanRight_ReturnsDifference()
+    [Theory(DisplayName = "AlternativePath: subtração com resultado >= 0 retorna a diferença esperada")]
+    [InlineData(100, 30, 70)]
+    [InlineData(50, 50, 0)]
+    [InlineData(0, 0, 0)]
+    [InlineData(150.75, 100.50, 50.25)]
+    public void Subtraction_WhenResultIsNonNegative_AlternativePath_ReturnsDifference(decimal left, decimal right, decimal expected)
     {
-        // Arrange
-        var a = new Money(100m);
-        var b = new Money(30m);
+        var a = new Money(left);
+        var b = new Money(right);
 
-        // Act
         var result = a - b;
 
-        // Assert
-        Assert.Equal(70m, result.Value);
+        Assert.Equal(expected, result.Value);
     }
 
-    [Fact]
-    public void Subtraction_WhenValuesAreEqual_ReturnsZero()
+    [Theory(DisplayName = "ExceptionalPath: subtração com resultado negativo lança DomainException")]
+    [InlineData(10, 20)]
+    [InlineData(0, 0.01)]
+    [InlineData(99.99, 100.00)]
+    public void Subtraction_WhenResultWouldBeNegative_ExceptionalPath_ThrowsDomainException(decimal left, decimal right)
     {
-        // Arrange
-        var a = new Money(50m);
-        var b = new Money(50m);
+        var a = new Money(left);
+        var b = new Money(right);
 
-        // Act
-        var result = a - b;
-
-        // Assert
-        Assert.Equal(0m, result.Value);
-    }
-
-    [Fact]
-    public void Subtraction_WhenResultWouldBeNegative_ThrowsDomainException()
-    {
-        // Arrange
-        var a = new Money(10m);
-        var b = new Money(20m);
-
-        // Act
         Action act = () => { var _ = a - b; };
 
-        // Assert
-        Assert.Throws<DomainException>(act);
+        var ex = Assert.Throws<DomainException>(act);
+        Assert.Equal(NegativeMoneyMessage, ex.Message);
     }
 
-    // ---------------------------------------------------------------------
+    // =========================================================================
     // Operador *
-    // ---------------------------------------------------------------------
+    // =========================================================================
 
-    [Fact]
-    public void Multiplication_ByPositiveFactor_ReturnsProduct()
+    [Theory(DisplayName = "AlternativePath: multiplicação por fator não-negativo retorna o produto arredondado")]
+    [InlineData(10, 3, 30)]
+    [InlineData(500, 0, 0)]
+    [InlineData(10, 0.333, 3.33)]
+    [InlineData(100, 0.003, 0.30)] // 0,3% de custo de transação (regra do desafio)
+    [InlineData(0, 100, 0)]
+    public void Multiplication_ByNonNegativeFactor_AlternativePath_ReturnsRoundedProduct(decimal value, decimal factor, decimal expected)
     {
-        // Arrange
-        var money = new Money(10m);
+        var money = new Money(value);
 
-        // Act
-        var result = money * 3m;
+        var result = money * factor;
 
-        // Assert
-        Assert.Equal(30m, result.Value);
+        Assert.Equal(expected, result.Value);
     }
 
-    [Fact]
-    public void Multiplication_ByZeroFactor_ReturnsZero()
+    [Theory(DisplayName = "ExceptionalPath: multiplicação que resulta em valor negativo lança DomainException")]
+    [InlineData(10, -1)]
+    [InlineData(0.01, -0.5)]
+    [InlineData(100, -0.003)]
+    public void Multiplication_ByNegativeFactor_ExceptionalPath_ThrowsDomainException(decimal value, decimal factor)
     {
-        // Arrange
-        var money = new Money(500m);
+        var money = new Money(value);
 
-        // Act
-        var result = money * 0m;
+        Action act = () => { var _ = money * factor; };
 
-        // Assert
-        Assert.Equal(0m, result.Value);
+        var ex = Assert.Throws<DomainException>(act);
+        Assert.Equal(NegativeMoneyMessage, ex.Message);
     }
 
-    [Fact]
-    public void Multiplication_ByNegativeFactor_ThrowsDomainException()
-    {
-        // Arrange
-        var money = new Money(10m);
-
-        // Act
-        Action act = () => { var _ = money * -1m; };
-
-        // Assert
-        Assert.Throws<DomainException>(act);
-    }
-
-    [Fact]
-    public void Multiplication_ResultIsRoundedToTwoDecimalPlaces()
-    {
-        // Arrange
-        var money = new Money(10m);
-
-        // Act
-        var result = money * 0.333m;
-
-        // Assert
-        Assert.Equal(3.33m, result.Value);
-    }
-
-    // ---------------------------------------------------------------------
+    // =========================================================================
     // Operador /
-    // ---------------------------------------------------------------------
+    // =========================================================================
 
-    [Fact]
-    public void Division_ByPositiveDivisor_ReturnsQuotient()
+    [Theory(DisplayName = "AlternativePath: divisão por divisor positivo retorna o quociente arredondado")]
+    [InlineData(100, 4, 25)]
+    [InlineData(10, 3, 3.33)]
+    [InlineData(0, 5, 0)]
+    [InlineData(51050.00, 4, 12762.50)]
+    public void Division_ByPositiveDivisor_AlternativePath_ReturnsRoundedQuotient(decimal value, decimal divisor, decimal expected)
     {
-        // Arrange
-        var money = new Money(100m);
+        var money = new Money(value);
 
-        // Act
-        var result = money / 4m;
+        var result = money / divisor;
 
-        // Assert
-        Assert.Equal(25m, result.Value);
+        Assert.Equal(expected, result.Value);
     }
 
-    [Fact]
-    public void Division_ByZero_ThrowsDivideByZeroException()
+    [Theory(DisplayName = "ExceptionalPath: divisão por zero lança DivideByZeroException")]
+    [InlineData(100, 0)]
+    [InlineData(0.01, 0)]
+    [InlineData(0, 0)]
+    public void Division_ByZero_ExceptionalPath_ThrowsDivideByZeroException(decimal value, decimal divisor)
     {
-        // Arrange
-        var money = new Money(100m);
+        var money = new Money(value);
 
-        // Act
-        Action act = () => { var _ = money / 0m; };
+        Action act = () => { var _ = money / divisor; };
 
-        // Assert
         Assert.Throws<DivideByZeroException>(act);
     }
 
-    [Fact]
-    public void Division_ByNegativeDivisor_ThrowsDomainException()
+    [Theory(DisplayName = "ExceptionalPath: divisão por divisor negativo (resultado negativo) lança DomainException")]
+    [InlineData(100, -2)]
+    [InlineData(10, -0.5)]
+    public void Division_ByNegativeDivisor_ExceptionalPath_ThrowsDomainException(decimal value, decimal divisor)
     {
-        // Arrange
-        var money = new Money(100m);
+        var money = new Money(value);
 
-        // Act
-        Action act = () => { var _ = money / -2m; };
+        Action act = () => { var _ = money / divisor; };
 
-        // Assert
-        Assert.Throws<DomainException>(act);
+        var ex = Assert.Throws<DomainException>(act);
+        Assert.Equal(NegativeMoneyMessage, ex.Message);
     }
 
-    [Fact]
-    public void Division_ResultIsRoundedToTwoDecimalPlaces()
-    {
-        // Arrange
-        var money = new Money(10m);
-
-        // Act
-        var result = money / 3m;
-
-        // Assert
-        Assert.Equal(3.33m, result.Value);
-    }
-
-    // ---------------------------------------------------------------------
+    // =========================================================================
     // ToString
-    // ---------------------------------------------------------------------
+    // =========================================================================
 
-    [Fact]
-    public void ToString_ReturnsValueFormattedWithTwoDecimalPlaces()
+    [Theory(DisplayName = "AlternativePath: ToString formata com 2 casas decimais respeitando a cultura corrente")]
+    [InlineData("en-US", "1,234.50")]
+    [InlineData("pt-BR", "1.234,50")]
+    public void ToString_AlternativePath_FormatsAccordingToCurrentCulture(string cultureName, string expected)
     {
-        // Arrange
-        // "N2" é sensível à cultura (separador decimal/milhar), então fixamos
-        // a cultura da thread durante o teste para evitar falhas intermitentes
-        // em máquinas/CI configuradas com culturas diferentes de en-US.
+        // "N2" depende da cultura corrente da thread (separador decimal/milhar).
+        // Isso é relevante para o domínio: os dados do desafio são de ativos
+        // negociados na B3 (mercado brasileiro), então a cultura pt-BR é a que
+        // normalmente será usada ao exibir esses valores para o usuário final.
         var originalCulture = Thread.CurrentThread.CurrentCulture;
-        Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
+        Thread.CurrentThread.CurrentCulture = new CultureInfo(cultureName);
         try
         {
             var money = new Money(1234.5m);
 
-            // Act
-            var result = money.ToString();
-
-            // Assert
-            Assert.Equal(1234.5m.ToString("N2", CultureInfo.CurrentCulture), result);
+            Assert.Equal(expected, money.ToString());
         }
         finally
         {
@@ -301,19 +223,14 @@ public class Moneytests
         }
     }
 
-    [Fact]
-    public void ToString_WithZero_ReturnsZeroFormatted()
+    [Fact(DisplayName = "AlternativePath: ToString de Money.Zero retorna '0.00' em en-US")]
+    public void ToString_WithZero_AlternativePath_ReturnsZeroFormatted()
     {
-        // Arrange
         var originalCulture = Thread.CurrentThread.CurrentCulture;
         Thread.CurrentThread.CurrentCulture = new CultureInfo("en-US");
         try
         {
-            // Act
-            var result = Money.Zero.ToString();
-
-            // Assert
-            Assert.Equal(0m.ToString("N2", CultureInfo.CurrentCulture), result);
+            Assert.Equal("0.00", Money.Zero.ToString());
         }
         finally
         {
@@ -321,43 +238,109 @@ public class Moneytests
         }
     }
 
-    // ---------------------------------------------------------------------
-    // Igualdade (record struct → igualdade por valor "de fábrica")
-    // ---------------------------------------------------------------------
+    // =========================================================================
+    // Igualdade (record struct → igualdade estrutural por valor)
+    // =========================================================================
 
-    [Fact]
-    public void Equality_TwoInstancesWithSameValue_AreEqual()
+    [Theory(DisplayName = "AlternativePath: igualdade compara pelo valor já arredondado")]
+    [InlineData(100, 100, true)]
+    [InlineData(100, 200, false)]
+    [InlineData(10.001, 10.004, true)]  // ambos arredondam para 10.00
+    [InlineData(10.001, 10.01, false)]  // 10.00 vs 10.01
+    public void Equality_ComparesByRoundedValue_AlternativePath(decimal left, decimal right, bool expectedEqual)
     {
-        // Arrange
-        var a = new Money(100m);
-        var b = new Money(100m);
+        var a = new Money(left);
+        var b = new Money(right);
 
-        // Assert
-        Assert.Equal(a, b);
-        Assert.True(a == b);
+        Assert.Equal(expectedEqual, a == b);
+        Assert.Equal(expectedEqual, a.Equals(b));
+        Assert.NotEqual(expectedEqual, a != b);
+
+        if (expectedEqual)
+        {
+            Assert.Equal(a.GetHashCode(), b.GetHashCode());
+        }
     }
 
-    [Fact]
-    public void Equality_TwoInstancesWithDifferentValues_AreNotEqual()
-    {
-        // Arrange
-        var a = new Money(100m);
-        var b = new Money(200m);
+    // =========================================================================
+    // Cenários de Domínio alinhados ao desafio (README.md / SeedData.json)
+    // =========================================================================
 
-        // Assert
-        Assert.NotEqual(a, b);
-        Assert.True(a != b);
+    [Fact(DisplayName = "AlternativePath: cálculo de valor investido e valor atual reproduz os dados reais do SeedData (posição PETR4)")]
+    public void DomainScenario_Petr4Position_AlternativePath_MatchesSeedDataFigures()
+    {
+        // Portfólio Conservador (user-001), posição PETR4:
+        // quantity = 500, averagePrice = 30.00, currentPrice (Asset) = 35.50
+        var averagePrice = new Money(30.00m);
+        var currentPrice = new Money(35.50m);
+        const int quantity = 500;
+
+        var investedAmount = averagePrice * quantity;
+        var currentValue = currentPrice * quantity;
+
+        Assert.Equal(15000.00m, investedAmount.Value);
+        Assert.Equal(17750.00m, currentValue.Value);
+
+        // Total Return (%) = (ValorAtual - ValorInvestido) / ValorInvestido * 100
+        var gain = currentValue - investedAmount;
+        Assert.Equal(2750.00m, gain.Value);
+
+        var totalReturnPercentage = Math.Round((gain.Value / investedAmount.Value) * 100m, 2);
+        Assert.Equal(18.33m, totalReturnPercentage);
     }
 
-    [Fact]
-    public void Equality_ValuesThatRoundToSameResult_AreEqual()
+    [Fact(DisplayName = "AlternativePath: soma das posições de um portfólio via Aggregate reproduz o totalInvestment do SeedData")]
+    public void DomainScenario_SumOfPositions_AlternativePath_MatchesPortfolioTotalInvestment()
     {
-        // Arrange
-        // Ambos arredondam para 10.00m antes de serem armazenados
-        var a = new Money(10.001m);
-        var b = new Money(10.004m);
+        // Portfólio Conservador (user-001): soma de quantity * averagePrice de cada posição
+        var positions = new[]
+        {
+            (Quantity: 500, AveragePrice: new Money(30.00m)),  // PETR4
+            (Quantity: 300, AveragePrice: new Money(60.00m)),  // VALE3
+            (Quantity: 1000, AveragePrice: new Money(18.00m)), // BBDC4
+            (Quantity: 600, AveragePrice: new Money(28.00m)),  // ITUB4
+            (Quantity: 200, AveragePrice: new Money(45.00m)),  // WEGE3
+        };
 
-        // Assert
-        Assert.Equal(a, b);
+        var totalInvested = positions.Aggregate(
+            Money.Zero,
+            (total, position) => total + position.AveragePrice * position.Quantity);
+
+        // 15000 + 18000 + 18000 + 16800 + 9000 = 76800
+        Assert.Equal(76800.00m, totalInvested.Value);
+    }
+
+    [Theory(DisplayName = "AlternativePath: custo de transação de 0,3% (regra do desafio) é calculado corretamente")]
+    [InlineData(1740.00, 5.22)] // BUY ITUB4, conforme exemplo do README
+    [InlineData(10000.00, 30.00)]
+    [InlineData(100.00, 0.30)]
+    public void DomainScenario_TransactionCost_AlternativePath_IsThreeTenthsPercentOfTradeValue(decimal tradeValue, decimal expectedCost)
+    {
+        var value = new Money(tradeValue);
+
+        var cost = value * 0.003m;
+
+        Assert.Equal(expectedCost, cost.Value);
+    }
+
+    [Fact(DisplayName = "IMPORTANTE - Discrepância: exemplo do README (SELL PETR4, R$ 5,33) assume arredondamento comercial, mas Money usa banker's rounding (ToEven), resultando em R$ 5,32")]
+    public void DomainScenario_TransactionCost_RoundingDiscrepancy_WithReadmeExample()
+    {
+        // O README (seção Rebalancing Suggestions) traz como exemplo:
+        //   { "action": "SELL", "asset": "PETR4", "value": 15000.00 }  (não usado aqui)
+        //   suggestedTrades[0].estimatedValue = 1775.00, transactionCost = 5.33
+        //
+        // 1775.00 * 0.3% = 5.325, que é EXATAMENTE o ponto médio entre 5.32 e 5.33.
+        // O README espera 5.33 (arredondamento comercial, "round half away from zero"),
+        // mas Money usa MidpointRounding.ToEven, que arredonda 5.325 para 5.32
+        // (dígito final par). Este teste documenta esse comportamento de propósito,
+        // para que a divergência seja uma decisão consciente (e não um bug
+        // silencioso) ao documentar premissas no README do projeto.
+        var estimatedValue = new Money(1775.00m);
+
+        var transactionCost = estimatedValue * 0.003m;
+
+        Assert.Equal(5.32m, transactionCost.Value); // comportamento real do Money (ToEven)
+        Assert.NotEqual(5.33m, transactionCost.Value); // valor citado no README do desafio
     }
 }

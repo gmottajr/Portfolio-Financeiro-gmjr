@@ -33,6 +33,13 @@ public sealed class Portfolio : AggregateRoot<int>
     private readonly List<Position> _positions = new();
     public IReadOnlyList<Position> Positions => _positions.AsReadOnly();
 
+    // Necessário para materialização pelo Entity Framework Core.
+    private Portfolio()
+    {
+        Name = null!;
+        UserId = null!;
+    }
+
     public Portfolio(string name, string userId, Money totalInvestment, DateTime? portfolioCreatedAt, IEnumerable<Position> positions)
     {
         if (string.IsNullOrWhiteSpace(name))

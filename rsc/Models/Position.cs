@@ -25,6 +25,11 @@ public sealed class Position : AuditableEntity
     public Percentage TargetAllocation { get; private set; }
     public DateTime? LastTransaction { get; private set; }
 
+    // Necessário para materialização pelo Entity Framework Core.
+    private Position()
+    {
+    }
+
     public Position(
         AssetSymbol assetSymbol,
         Quantity quantity,
