@@ -7,19 +7,26 @@ public sealed record LargestPositionRiskResult(string Symbol, decimal Percentage
 public sealed record ConcentrationRiskResult(LargestPositionRiskResult? LargestPosition, decimal Top3Concentration);
 public sealed record SectorDiversificationResult(string Sector, decimal Percentage, string Risk);
 public sealed record RiskAnalysisResult(string OverallRisk, decimal? SharpeRatio, ConcentrationRiskResult ConcentrationRisk, IReadOnlyList<SectorDiversificationResult> SectorDiversification, IReadOnlyList<string> Recommendations);
-public sealed record RiskPositionValue(string Symbol, Asset Asset, decimal InvestedAmount, decimal Value);
+public sealed record RiskPositionValue(string Symbol, Asset Asset, decimal Value);
 public sealed record RiskPositionHistory(decimal Weight, IReadOnlyDictionary<DateTime, decimal> DailyReturns);
 
 /// <summary>Pure calculation and policy logic for a portfolio risk analysis.</summary>
 public sealed class PortfolioRiskCalculator
 {
-    public RiskAnalysisResult Calculate(IReadOnlyList<RiskPositionValue> positions, DateTime? portfolioCreatedAt, decimal? selicRate)
+    public RiskAnalysisResult Calculate(
+        IReadOnlyList<RiskPositionValue> positions,
+        decimal totalInvestment,
+        DateTime? portfolioCreatedAt,
+        decimal? selicRate)
     {
         var totalValue = positions.Sum(position => position.Value);
         var concentration = CalculateConcentration(positions, totalValue);
         var sectors = CalculateSectors(positions, totalValue);
         var calculationDate = positions.Count == 0 ? (DateTime?)null : positions.Max(position => position.Asset.LastUpdated);
-        var annualizedReturn = CalculateAnnualizedReturn(CalculatePortfolioReturn(positions.Sum(position => position.InvestedAmount), totalValue), portfolioCreatedAt, calculationDate);
+        var annualizedReturn = CalculateAnnualizedReturn(
+            CalculatePortfolioReturn(totalInvestment, totalValue),
+            portfolioCreatedAt,
+            calculationDate);
         var sharpeRatio = CalculateSharpeRatio(annualizedReturn, selicRate, CalculateAnnualizedVolatility(positions, totalValue));
         return new RiskAnalysisResult(CalculateOverallRisk(concentration.LargestPosition?.Percentage ?? 0m, sectors), sharpeRatio, concentration, sectors, BuildRecommendations(concentration, sectors));
     }

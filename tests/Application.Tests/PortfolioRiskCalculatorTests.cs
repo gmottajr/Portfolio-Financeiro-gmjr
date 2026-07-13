@@ -11,7 +11,7 @@ public sealed class PortfolioRiskCalculatorTests
     [Fact]
     public void Calculate_WithoutPositions_ReturnsLowRiskAndNoMetrics()
     {
-        var result = _calculator.Calculate([], new DateTime(2024, 1, 1), 10m);
+        var result = _calculator.Calculate([], 0m, new DateTime(2024, 1, 1), 10m);
 
         Assert.Equal("Low", result.OverallRisk);
         Assert.Null(result.SharpeRatio);
@@ -31,7 +31,7 @@ public sealed class PortfolioRiskCalculatorTests
             Position("ITUB4", "Financial", 15m)
         };
 
-        var result = _calculator.Calculate(positions, new DateTime(2024, 1, 1), 10m);
+        var result = _calculator.Calculate(positions, 100m, new DateTime(2024, 1, 1), 10m);
 
         Assert.Equal("High", result.OverallRisk);
         Assert.Equal("PETR4", result.ConcentrationRisk.LargestPosition!.Symbol);
@@ -54,7 +54,11 @@ public sealed class PortfolioRiskCalculatorTests
             new PricePoint(new DateTime(2024, 1, 3), new Money(100m))
         ]);
 
-        var result = _calculator.Calculate([new RiskPositionValue("PETR4", asset, 100m, 120m)], new DateTime(2024, 1, 1), 10m);
+        var result = _calculator.Calculate(
+            [new RiskPositionValue("PETR4", asset, 120m)],
+            100m,
+            new DateTime(2024, 1, 1),
+            10m);
 
         Assert.Equal(0.0656m, result.SharpeRatio);
     }
@@ -65,7 +69,11 @@ public sealed class PortfolioRiskCalculatorTests
         var withHistory = Position("PETR4", "Energy", 100m, [100m, 110m]);
         var withoutHistory = Position("VALE3", "Mining", 100m);
 
-        var result = _calculator.Calculate([withHistory, withoutHistory], new DateTime(2024, 1, 1), 10m);
+        var result = _calculator.Calculate(
+            [withHistory, withoutHistory],
+            200m,
+            new DateTime(2024, 1, 1),
+            10m);
 
         Assert.Null(result.SharpeRatio);
     }
@@ -75,6 +83,6 @@ public sealed class PortfolioRiskCalculatorTests
         var asset = new Asset(new AssetSymbol(symbol), symbol, "Stock", sector, new Money(value), new DateTime(2025, 1, 1));
         if (history is not null)
             asset.SetPriceHistory(history.Select((price, index) => new PricePoint(new DateTime(2024, 1, 1).AddDays(index), new Money(price))));
-        return new RiskPositionValue(symbol, asset, value, value);
+        return new RiskPositionValue(symbol, asset, value);
     }
 }

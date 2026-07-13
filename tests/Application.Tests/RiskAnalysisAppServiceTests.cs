@@ -29,6 +29,21 @@ public sealed class RiskAnalysisAppServiceTests
     }
 
     [Fact]
+    public async Task AnalyzeAsync_UsesPortfolioTotalInvestmentAsSharpeReturnBase()
+    {
+        var portfolio = PortfolioWith(
+            200m,
+            new Position(new AssetSymbol("PETR4"), new Quantity(1), new Money(100), new Percentage(100)));
+        var asset = AssetWith("PETR4", "Energy", 120m, [100m, 110m, 100m]);
+        var service = CreateService(portfolio, [asset], 10m);
+
+        var result = await service.AnalyzeAsync(portfolio.Id);
+
+        Assert.NotNull(result);
+        Assert.Equal(-0.3294m, result.SharpeRatio);
+    }
+
+    [Fact]
     public async Task AnalyzeAsync_ClassifiesRiskAndRecommendsReductionForConcentratedSector()
     {
         var positions = new[] { "PETR4", "VALE3", "BBDC4", "ITUB4", "MGLU3" }

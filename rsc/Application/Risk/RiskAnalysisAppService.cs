@@ -38,9 +38,15 @@ public sealed class RiskAnalysisAppService(
             logger.LogDebug("Risk input portfolio loaded with {PositionCount} positions.", portfolio.Positions.Count);
             var positions = await LoadPositionValuesAsync(portfolio, ct);
             var selicRate = await marketData.GetSelicRateAsync(ct);
-            logger.LogDebug("Risk calculation inputs loaded. PositionCount: {PositionCount}; SelicRate: {SelicRate}; PortfolioCreatedAt: {PortfolioCreatedAt}.", positions.Count, selicRate, portfolio.PortfolioCreatedAt);
+            logger.LogDebug(
+                "Risk calculation inputs loaded. PositionCount: {PositionCount}; TotalInvestment: {TotalInvestment}; SelicRate: {SelicRate}; PortfolioCreatedAt: {PortfolioCreatedAt}.",
+                positions.Count,
+                portfolio.TotalInvestment.Value,
+                selicRate,
+                portfolio.PortfolioCreatedAt);
             var result = calculator.Calculate(
                 positions,
+                portfolio.TotalInvestment.Value,
                 portfolio.PortfolioCreatedAt,
                 selicRate);
 
@@ -77,7 +83,7 @@ public sealed class RiskAnalysisAppService(
                 position.InvestedAmount.Value,
                 currentValue,
                 asset.PriceHistory.Count);
-            positions.Add(new RiskPositionValue(position.AssetSymbol.Value, asset, position.InvestedAmount.Value, currentValue));
+            positions.Add(new RiskPositionValue(position.AssetSymbol.Value, asset, currentValue));
         }
         return positions;
     }

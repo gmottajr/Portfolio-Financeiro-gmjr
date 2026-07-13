@@ -66,6 +66,15 @@ Invoke-RestMethod "{url}/api/portfolios/1/rebalancing"
 
 O cálculo de rebalanceamento depende de `IRebalancingOptimizer`; o caso de uso apenas lê os dados e apresenta a resposta. Essa separação mantém o algoritmo independente de HTTP, EF Core e logging.
 
+### Configuração do banco InMemory
+
+Há um único arquivo de configuração: [appsettings.json](rsc/Portfolio-Financeiro-WebApplication/appsettings.json). Para o provider EF Core InMemory não existe connection string; o identificador equivalente é o nome do banco.
+
+- `Database:InMemory:ProductionName`: `portfolio-analytics-production`, usado pela API nos ambientes normais.
+- `Database:InMemory:IntegrationTestName`: `portfolio-analytics-integration-tests`, usado pela API quando o ambiente é `Testing`.
+
+Os projetos `Api.Tests` e `Persistence.Tests` copiam esse mesmo arquivo ao build. A fábrica dos testes de API força o ambiente `Testing` e lê a cópia do arquivo, portanto não usa o nome de produção. Os testes de persistência ainda acrescentam um identificador único por caso ao store InMemory, isolando execuções paralelas.
+
 ### Fórmulas financeiras e premissas
 
 - **Retorno total:** `((valor atual - valor investido) / valor investido) × 100`. `totalInvestment` é o capital inicial de `Portfolio.TotalInvestment`, mesmo quando a soma das posições é diferente.
@@ -74,7 +83,7 @@ O cálculo de rebalanceamento depende de `IRebalancingOptimizer`; o caso de uso 
 - **Retorno diário:** `(fechamento[t] - fechamento[t-1]) / fechamento[t-1]`.
 - **Volatilidade de performance:** desvio-padrão populacional dos retornos diários ponderados; é retornada em base diária.
 - **Volatilidade usada no Sharpe:** volatilidade diária anualizada por `√252`.
-- **Sharpe Ratio:** `(retorno anualizado - Selic anual) / volatilidade anualizada`.
+- **Sharpe Ratio:** `(retorno anualizado - Selic anual) / volatilidade anualizada`. O retorno anualizado usa `Portfolio.TotalInvestment`, a mesma base do endpoint de performance, e não é reconstruído pela soma dos custos das posições.
 - **Custo de transação:** `valor negociado × 0,3%`, arredondado comercialmente para centavos.
 - **Rebalanceamento:** o valor-alvo é `valor pós-custos × peso-alvo`; o plano resolve `valor pós-custos + custos = valor atual`, para que vendas líquidas financiem compras e taxas. A quantidade é `valor negociado / preço atual`.
 
@@ -89,7 +98,7 @@ O cálculo de rebalanceamento depende de `IRebalancingOptimizer`; o caso de uso 
 
 ### Observabilidade
 
-Em `Development`, a categoria `Application` está configurada em nível `Debug`. Os casos de uso registram, com `Operation` e `PortfolioId`, o carregamento dos dados, entradas relevantes, resultados dos cálculos e operações de rebalanceamento. Os algoritmos puros não recebem logger, preservando testabilidade e responsabilidade única.
+A categoria `Application` está configurada em nível `Debug` no único `appsettings.json`. Os casos de uso registram, com `Operation` e `PortfolioId`, o carregamento dos dados, entradas relevantes, resultados dos cálculos e operações de rebalanceamento. Os algoritmos puros não recebem logger, preservando testabilidade e responsabilidade única.
 
 ### Estado da entrega
 
