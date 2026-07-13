@@ -112,7 +112,13 @@ public sealed class PerformanceCalculator : IPerformanceCalculator
             .Select(position =>
             {
                 var asset = assets[position.AssetSymbol];
-                var points = asset.PriceHistory.OrderBy(point => point.Date).ToList();
+                // EF Core can materialize legacy data without going through
+                // Asset.SetPriceHistory, so protect the calculation as well.
+                var points = asset.PriceHistory
+                    .GroupBy(point => point.Date.Date)
+                    .Select(group => group.OrderBy(point => point.Date).Last())
+                    .OrderBy(point => point.Date)
+                    .ToList();
                 if (points.Count < 2)
                 {
                     return null;

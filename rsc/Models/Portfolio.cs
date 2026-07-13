@@ -55,6 +55,7 @@ public sealed class Portfolio : AggregateRoot<int>
 
         var positionList = positions.ToList();
         EnsureNoDuplicateAssets(positionList);
+        EnsureTargetAllocationsAreValid(positionList);
         _positions.AddRange(positionList);
     }
 
@@ -66,6 +67,16 @@ public sealed class Portfolio : AggregateRoot<int>
 
         if (duplicated is not null)
             throw new DomainException($"Portfolio has duplicated positions for asset {duplicated.Key}.");
+    }
+
+    private static void EnsureTargetAllocationsAreValid(IReadOnlyCollection<Position> positions)
+    {
+        if (positions.Count == 0)
+            return;
+
+        var total = positions.Sum(position => position.TargetAllocation.Value);
+        if (Math.Abs(total - 100m) > 0.0001m)
+            throw new BusinessViolationException($"Portfolio target allocations must total 100%. Current total: {total}%.");
     }
 
     /// <summary>
@@ -105,6 +116,9 @@ public sealed class Portfolio : AggregateRoot<int>
             ?? throw new DomainException($"Portfolio {Id} has no position for {assetSymbol}.");
 
         var oldAllocation = position.TargetAllocation;
+        var newTotal = Positions.Sum(item => item.TargetAllocation.Value) - oldAllocation.Value + newAllocation.Value;
+        if (Math.Abs(newTotal - 100m) > 0.0001m)
+            throw new BusinessViolationException($"Portfolio target allocations must total 100%. Current total would be: {newTotal}%.");
         position.ChangeTargetAllocation(newAllocation);
 
         Raise(new TargetAllocationChanged(Id, assetSymbol, oldAllocation, newAllocation));

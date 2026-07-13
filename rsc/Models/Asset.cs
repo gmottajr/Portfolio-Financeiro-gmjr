@@ -72,10 +72,17 @@ public sealed class Asset : AggregateRoot<AssetSymbol>
         Raise(new AssetPriceUpdated(Symbol, oldPrice, newPrice));
     }
 
-    /// <summary>Usado pelo mapper de carga do seed. Mantém a lista ordenada por data.</summary>
+    /// <summary>
+    /// Usado pelo mapper de carga do seed. Mantém apenas o último preço de cada
+    /// dia, pois volatilidade diária exige uma única cotação de fechamento.
+    /// </summary>
     public void SetPriceHistory(IEnumerable<PricePoint> history)
     {
+        ArgumentNullException.ThrowIfNull(history);
         _priceHistory.Clear();
-        _priceHistory.AddRange(history.OrderBy(p => p.Date));
+        _priceHistory.AddRange(history
+            .GroupBy(point => point.Date.Date)
+            .OrderBy(group => group.Key)
+            .Select(group => group.OrderBy(point => point.Date).Last()));
     }
 }

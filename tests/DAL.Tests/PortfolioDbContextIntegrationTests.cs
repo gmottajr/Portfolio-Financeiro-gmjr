@@ -19,8 +19,8 @@ public sealed class PortfolioDbContextIntegrationTests
             new Money(100_000m),
             createdAt,
             [
-                new Position(new AssetSymbol("PETR4"), new Quantity(500), new Money(30m), new Percentage(20m)),
-                new Position(new AssetSymbol("VALE3"), new Quantity(300), new Money(60m), new Percentage(25m))
+                new Position(new AssetSymbol("PETR4"), new Quantity(500), new Money(30m), new Percentage(40m)),
+                new Position(new AssetSymbol("VALE3"), new Quantity(300), new Money(60m), new Percentage(60m))
             ]);
         portfolio.AssignId(1);
 
@@ -43,14 +43,14 @@ public sealed class PortfolioDbContextIntegrationTests
                 Assert.Equal("PETR4", petr4.AssetSymbol.Value);
                 Assert.Equal(500m, petr4.Quantity.Value);
                 Assert.Equal(30m, petr4.AveragePrice.Value);
-                Assert.Equal(20m, petr4.TargetAllocation.Value);
+                Assert.Equal(40m, petr4.TargetAllocation.Value);
             },
             vale3 =>
             {
                 Assert.Equal("VALE3", vale3.AssetSymbol.Value);
                 Assert.Equal(300m, vale3.Quantity.Value);
                 Assert.Equal(60m, vale3.AveragePrice.Value);
-                Assert.Equal(25m, vale3.TargetAllocation.Value);
+                Assert.Equal(60m, vale3.TargetAllocation.Value);
             });
     }
 
@@ -68,7 +68,8 @@ public sealed class PortfolioDbContextIntegrationTests
             updatedAt);
         asset.SetPriceHistory(
         [
-            new PricePoint(new DateTime(2024, 10, 6), new Money(35.50m)),
+            new PricePoint(new DateTime(2024, 10, 6, 9, 0, 0), new Money(35.00m)),
+            new PricePoint(new DateTime(2024, 10, 6, 16, 0, 0), new Money(35.50m)),
             new PricePoint(new DateTime(2024, 10, 4), new Money(35.25m))
         ]);
 
@@ -92,7 +93,7 @@ public sealed class PortfolioDbContextIntegrationTests
             },
             second =>
             {
-                Assert.Equal(new DateTime(2024, 10, 6), second.Date);
+                Assert.Equal(new DateTime(2024, 10, 6, 16, 0, 0), second.Date);
                 Assert.Equal(35.50m, second.Price.Value);
             });
     }
@@ -139,6 +140,52 @@ public sealed class PortfolioDbContextIntegrationTests
             duplicatePositions));
 
         Assert.Contains("duplicated positions", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void CreatingPortfolioWithTargetAllocationsThatDoNotTotalOneHundred_ThrowsBeforePersistence()
+    {
+        var positions = new[]
+        {
+            new Position(new AssetSymbol("PETR4"), new Quantity(100), new Money(30m), new Percentage(40m)),
+            new Position(new AssetSymbol("VALE3"), new Quantity(100), new Money(60m), new Percentage(50m))
+        };
+
+        var exception = Assert.Throws<BusinessViolationException>(() => new Portfolio(
+            "Portfolio inválido",
+            "user-003",
+            new Money(6_000m),
+            portfolioCreatedAt: null,
+            positions));
+
+        Assert.Contains("total 100%", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ChangeTargetAllocation_RejectsChangeThatWouldInvalidatePortfolioTotal()
+    {
+        var portfolio = new Portfolio(
+            "Portfolio válido",
+            "user-003",
+            new Money(6_000m),
+            portfolioCreatedAt: null,
+            [
+                new Position(new AssetSymbol("PETR4"), new Quantity(100), new Money(30m), new Percentage(50m)),
+                new Position(new AssetSymbol("VALE3"), new Quantity(100), new Money(60m), new Percentage(50m))
+            ]);
+
+        var exception = Assert.Throws<BusinessViolationException>(() =>
+            portfolio.ChangeTargetAllocation(new AssetSymbol("PETR4"), new Percentage(60m)));
+
+        Assert.Contains("total 100%", exception.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(50m, portfolio.FindPosition(new AssetSymbol("PETR4"))!.TargetAllocation.Value);
+    }
+
+    [Fact]
+    public void CreatingPositionWithTargetOutsideAllowedRange_ThrowsBusinessViolationException()
+    {
+        Assert.Throws<BusinessViolationException>(() =>
+            new Position(new AssetSymbol("PETR4"), new Quantity(100), new Money(30m), new Percentage(101m)));
     }
 
     private static PortfolioDbContext CreateContext()

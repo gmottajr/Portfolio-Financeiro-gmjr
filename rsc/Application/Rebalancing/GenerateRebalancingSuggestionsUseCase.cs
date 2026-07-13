@@ -22,6 +22,11 @@ public sealed class GenerateRebalancingSuggestionsUseCase(
 {
     public async Task<RebalancingResponse?> ExecuteAsync(int portfolioId, CancellationToken ct = default)
     {
+        using var scope = logger.BeginScope(new Dictionary<string, object>
+        {
+            ["Operation"] = "GenerateRebalancingSuggestions",
+            ["PortfolioId"] = portfolioId
+        });
         logger.LogInformation("Generating rebalancing suggestions for portfolio {PortfolioId}.", portfolioId);
 
         try
@@ -33,8 +38,26 @@ public sealed class GenerateRebalancingSuggestionsUseCase(
                 return null;
             }
 
+            logger.LogDebug("Rebalancing input portfolio loaded with {PositionCount} positions.", portfolio.Positions.Count);
             var positions = await LoadPositionsAsync(portfolio, ct);
+            logger.LogDebug("Rebalancing optimizer invoked. CurrentPortfolioValue: {CurrentPortfolioValue}; PositionCount: {PositionCount}.", positions.Sum(position => position.CurrentValue), positions.Count);
             var result = optimizer.Optimize(positions);
+            logger.LogDebug(
+                "Rebalancing optimizer result. NeedsRebalancing: {NeedsRebalancing}; TradeCount: {TradeCount}; TotalTransactionCost: {TotalTransactionCost}; ExpectedImprovement: {ExpectedImprovement}.",
+                result.NeedsRebalancing,
+                result.SuggestedTrades.Count,
+                result.TotalTransactionCost,
+                result.ExpectedImprovement);
+            foreach (var trade in result.SuggestedTrades)
+            {
+                logger.LogDebug(
+                    "Suggested trade. AssetSymbol: {AssetSymbol}; Action: {Action}; Quantity: {Quantity}; EstimatedValue: {EstimatedValue}; TransactionCost: {TransactionCost}.",
+                    trade.Symbol,
+                    trade.Action,
+                    trade.Quantity,
+                    trade.EstimatedValue,
+                    trade.TransactionCost);
+            }
             logger.LogInformation(
                 "Generated {TradeCount} self-financed rebalancing suggestions for portfolio {PortfolioId}. Total transaction cost: {TotalTransactionCost}.",
                 result.SuggestedTrades.Count, portfolioId, result.TotalTransactionCost);
@@ -55,7 +78,14 @@ public sealed class GenerateRebalancingSuggestionsUseCase(
         {
             var asset = await assets.GetByIdAsync(position.AssetSymbol, ct)
                 ?? throw new PortfolioDataIncompleteException($"Asset {position.AssetSymbol} was not found.");
-            result.Add(new RebalancingPosition(position.AssetSymbol.Value, position.CurrentValue(asset.CurrentPrice).Value, asset.CurrentPrice.Value, position.TargetAllocation.Value));
+            var currentValue = position.CurrentValue(asset.CurrentPrice).Value;
+            logger.LogDebug(
+                "Rebalancing position loaded. AssetSymbol: {AssetSymbol}; CurrentValue: {CurrentValue}; CurrentPrice: {CurrentPrice}; TargetWeight: {TargetWeight}.",
+                position.AssetSymbol.Value,
+                currentValue,
+                asset.CurrentPrice.Value,
+                position.TargetAllocation.Value);
+            result.Add(new RebalancingPosition(position.AssetSymbol.Value, currentValue, asset.CurrentPrice.Value, position.TargetAllocation.Value));
         }
 
         return result;

@@ -342,6 +342,11 @@ R: Sim, retorne 404 se não existir.
 **P: O que fazer se TargetAllocation não somar 100%?**  
 R: Documente sua decisão (normalizar, rejeitar ou aceitar).
 
+### Decisões implementadas
+
+- Cada posição aceita `TargetAllocation` entre 0% e 100%; portfólios com posições devem totalizar exatamente 100% (tolerância de 0,0001%). A criação ou alteração que viole essa regra é rejeitada com erro de domínio.
+- Quando houver mais de uma cotação no mesmo dia, o sistema usa a cotação mais recente como fechamento diário. Assim, os cálculos de volatilidade nunca duplicam retornos intradiários.
+
 ---
 
 **Boa sorte! 🚀**

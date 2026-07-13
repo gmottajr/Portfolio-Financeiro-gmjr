@@ -38,7 +38,7 @@ public sealed class Position : AuditableEntity
         DateTime? lastTransaction = null)
     {
         if (targetAllocation.Value is < 0m or > 100m)
-            throw new DomainException($"Target allocation for {assetSymbol} must be between 0% and 100%.");
+            throw new BusinessViolationException($"Target allocation for {assetSymbol} must be between 0% and 100%.");
 
         AssetSymbol = assetSymbol;
         Quantity = quantity;
@@ -68,7 +68,7 @@ public sealed class Position : AuditableEntity
     internal void ChangeTargetAllocation(Percentage newAllocation)
     {
         if (newAllocation.Value is < 0m or > 100m)
-            throw new DomainException($"Target allocation for {AssetSymbol} must be between 0% and 100%.");
+            throw new BusinessViolationException($"Target allocation for {AssetSymbol} must be between 0% and 100%.");
 
         TargetAllocation = newAllocation;
         MarkAsUpdated();

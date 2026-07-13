@@ -39,6 +39,25 @@ public sealed class PerformanceCalculatorTests
     }
 
     [Fact]
+    public void Calculate_UsesLatestPriceWhenHistoryContainsMultipleQuotesForTheSameDay()
+    {
+        var portfolio = PortfolioWith(new Position(new AssetSymbol("PETR4"), new Quantity(10), new Money(10), new Percentage(100)), 100m);
+        var asset = AssetWith(new AssetSymbol("PETR4"), 12m,
+        [
+            new PricePoint(new DateTime(2024, 1, 1, 16, 0, 0), new Money(10m)),
+            new PricePoint(new DateTime(2024, 1, 2, 9, 0, 0), new Money(11m)),
+            new PricePoint(new DateTime(2024, 1, 2, 16, 0, 0), new Money(12m)),
+            new PricePoint(new DateTime(2024, 1, 3, 16, 0, 0), new Money(15m))
+        ]);
+
+        var result = _calculator.Calculate(portfolio, new Dictionary<AssetSymbol, Asset> { [asset.Symbol] = asset }, new DateTime(2024, 1, 3));
+
+        Assert.Equal(3, asset.PriceHistory.Count);
+        Assert.Equal(12m, asset.PriceHistory[1].Price.Value);
+        Assert.Equal(2.5m, result.Volatility);
+    }
+
+    [Fact]
     public void Calculate_UsesPortfolioTotalInvestmentAndRejectsPartialPriceHistory()
     {
         var petr4 = new Position(new AssetSymbol("PETR4"), new Quantity(10), new Money(10), new Percentage(50));

@@ -35,6 +35,10 @@ public sealed class GetPortfolioPerformanceQueryHandler(
             }
 
             logger.LogInformation("Portfolio loaded with {PositionCount} positions.", portfolio.Positions.Count);
+            logger.LogDebug(
+                "Performance input loaded. TotalInvestment: {TotalInvestment}; PortfolioCreatedAt: {PortfolioCreatedAt}.",
+                portfolio.TotalInvestment.Value,
+                portfolio.PortfolioCreatedAt);
             var assets = await LoadAssetsAsync(portfolio, ct);
             logger.LogInformation("Loaded {AssetCount} assets required for performance analysis.", assets.Count);
 
@@ -42,7 +46,16 @@ public sealed class GetPortfolioPerformanceQueryHandler(
             // timestamp so annualized returns stay reproducible instead of
             // changing with the API server clock.
             var calculationDate = assets.Values.Max(asset => asset.LastUpdated);
+            logger.LogDebug("Performance calculation date resolved to {CalculationDate}.", calculationDate);
             var response = calculator.Calculate(portfolio, assets, calculationDate);
+            logger.LogDebug(
+                "Performance calculation result. PositionCount: {PositionCount}; TotalInvestment: {TotalInvestment}; CurrentValue: {CurrentValue}; ReturnAmount: {ReturnAmount}; AnnualizedReturn: {AnnualizedReturn}; Volatility: {Volatility}.",
+                response.PositionsPerformance.Count,
+                response.TotalInvestment,
+                response.CurrentValue,
+                response.TotalReturnAmount,
+                response.AnnualizedReturn,
+                response.Volatility);
             logger.LogInformation(
                 "Portfolio performance analysis completed. CurrentValue: {CurrentValue}; TotalReturn: {TotalReturn}; Volatility: {Volatility}.",
                 response.CurrentValue,
@@ -69,6 +82,11 @@ public sealed class GetPortfolioPerformanceQueryHandler(
             var asset = await dataReader.GetAssetAsync(position.AssetSymbol, ct)
                 ?? throw new PortfolioDataIncompleteException(
                     $"Asset '{position.AssetSymbol}' was not found for portfolio {portfolio.Id}.");
+            logger.LogDebug(
+                "Loaded asset {AssetSymbol}. CurrentPrice: {CurrentPrice}; PriceHistoryCount: {PriceHistoryCount}.",
+                asset.Symbol.Value,
+                asset.CurrentPrice.Value,
+                asset.PriceHistory.Count);
             assets.Add(position.AssetSymbol, asset);
         }
 
