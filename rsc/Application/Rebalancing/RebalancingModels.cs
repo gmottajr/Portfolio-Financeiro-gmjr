@@ -1,3 +1,5 @@
+using SharedKernel.Enums;
+
 namespace Application.Rebalancing;
 
 public enum RebalancingOptimizationMode
@@ -23,7 +25,7 @@ public sealed record CurrentAllocation(
 
 public sealed record SuggestedTrade(
     string Symbol,
-    string Action,
+    TradeActionEnum Action,
     decimal Quantity,
     decimal EstimatedValue,
     decimal TransactionCost,
@@ -70,7 +72,7 @@ public sealed record CurrentAllocationResult(
 
 public sealed record SuggestedTradeResult(
     string Symbol,
-    string Action,
+    TradeActionEnum Action,
     decimal Quantity,
     decimal EstimatedValue,
     decimal TransactionCost,
@@ -125,4 +127,3 @@ public sealed record RebalancingStrategyPlan(
     IReadOnlyList<SuggestedTradeResult> Trades,
     RebalancingPlanMetricsResult Metrics,
     string? Message = null);
-

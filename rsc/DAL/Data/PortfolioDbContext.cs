@@ -34,7 +34,9 @@ public sealed class PortfolioDbContext(DbContextOptions<PortfolioDbContext> opti
                 .HasConversion(symbol => symbol.Value, value => new AssetSymbol(value))
                 .HasMaxLength(6);
             asset.Property(x => x.Name).IsRequired();
-            asset.Property(x => x.Type).IsRequired();
+            asset.Property(x => x.Type)
+                .HasConversion<string>()
+                .IsRequired();
             asset.Property(x => x.Sector).IsRequired();
             asset.Property(x => x.CurrentPrice)
                 .HasConversion(money => money.Value, value => new Money(value));

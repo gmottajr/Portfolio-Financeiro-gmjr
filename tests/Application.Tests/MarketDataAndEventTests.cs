@@ -1,6 +1,7 @@
 using Application.Rebalancing;
 using Models;
 using Models.Events;
+using SharedKernel.Enums;
 using SharedKernel.ValueObjects;
 
 namespace Application.Tests;
@@ -36,11 +37,11 @@ public sealed class MarketDataAndEventTests
     {
         var symbol = new AssetSymbol("PETR4");
         var priceUpdated = new AssetPriceUpdated(symbol, new Money(30m), new Money(35.5m));
-        var rebalanced = new PositionRebalanced(12, symbol, "SELL", new Quantity(50m));
+        var rebalanced = new PositionRebalanced(12, symbol, TradeActionEnum.Sell, new Quantity(50m));
         var allocationChanged = new TargetAllocationChanged(12, symbol, new Percentage(20m), new Percentage(15m));
 
         Assert.Equal(("PETR4", 30m, 35.5m), (priceUpdated.Symbol.Value, priceUpdated.OldPrice.Value, priceUpdated.NewPrice.Value));
-        Assert.Equal((12, "PETR4", "SELL", 50m), (rebalanced.PortfolioId, rebalanced.Symbol.Value, rebalanced.Action, rebalanced.TradedQuantity.Value));
+        Assert.Equal((12, "PETR4", TradeActionEnum.Sell, 50m), (rebalanced.PortfolioId, rebalanced.Symbol.Value, rebalanced.Action, rebalanced.TradedQuantity.Value));
         Assert.Equal((12, "PETR4", 20m, 15m), (allocationChanged.PortfolioId, allocationChanged.Symbol.Value, allocationChanged.OldAllocation.Value, allocationChanged.NewAllocation.Value));
         Assert.True(priceUpdated.OccurredOn <= DateTime.UtcNow);
     }
@@ -48,10 +49,10 @@ public sealed class MarketDataAndEventTests
     [Fact]
     public void SuggestedTrade_PreservesAllResponseFields()
     {
-        var trade = new SuggestedTrade("PETR4", "SELL", 50m, 1_775m, 5.33m, "Reduzir concentração.");
+        var trade = new SuggestedTrade("PETR4", TradeActionEnum.Sell, 50m, 1_775m, 5.33m, "Reduzir concentração.");
 
         Assert.Equal("PETR4", trade.Symbol);
-        Assert.Equal("SELL", trade.Action);
+        Assert.Equal(TradeActionEnum.Sell, trade.Action);
         Assert.Equal(50m, trade.Quantity);
         Assert.Equal(1_775m, trade.EstimatedValue);
         Assert.Equal(5.33m, trade.TransactionCost);

@@ -2,6 +2,7 @@ using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Models;
+using SharedKernel.Enums;
 using SharedKernel.Exceptions;
 using SharedKernel.ValueObjects;
 
@@ -63,7 +64,7 @@ public sealed class PortfolioDbContextIntegrationTests
         var asset = new Asset(
             new AssetSymbol("PETR4"),
             "Petrobras PN",
-            "Stock",
+            AssetTypeEnum.Stock,
             "Energy",
             new Money(35.50m),
             updatedAt);

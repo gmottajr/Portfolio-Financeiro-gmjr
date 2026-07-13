@@ -1,4 +1,5 @@
 using Application.Rebalancing;
+using SharedKernel.Enums;
 
 namespace Application.Tests;
 
@@ -18,8 +19,8 @@ public sealed class RebalancingOptimizerTests
 
         Assert.True(result.NeedsRebalancing);
         Assert.Equal(3, result.SuggestedTrades.Count);
-        var sales = result.SuggestedTrades.Where(trade => trade.Action == "SELL").Sum(trade => trade.EstimatedValue - trade.TransactionCost);
-        var purchases = result.SuggestedTrades.Where(trade => trade.Action == "BUY").Sum(trade => trade.EstimatedValue + trade.TransactionCost);
+        var sales = result.SuggestedTrades.Where(trade => trade.Action == TradeActionEnum.Sell).Sum(trade => trade.EstimatedValue - trade.TransactionCost);
+        var purchases = result.SuggestedTrades.Where(trade => trade.Action == TradeActionEnum.Buy).Sum(trade => trade.EstimatedValue + trade.TransactionCost);
         Assert.True(sales >= purchases);
         Assert.All(result.SuggestedTrades, trade => Assert.True(trade.EstimatedValue >= 100m));
         Assert.All(result.SuggestedTrades, trade => Assert.Equal(decimal.Round(trade.EstimatedValue * 0.003m, 2, MidpointRounding.AwayFromZero), trade.TransactionCost));
@@ -31,7 +32,7 @@ public sealed class RebalancingOptimizerTests
             ["BBDC4"] = 2_500m
         };
         foreach (var trade in result.SuggestedTrades)
-            finalValues[trade.Symbol] += trade.Action == "BUY" ? trade.EstimatedValue : -trade.EstimatedValue;
+            finalValues[trade.Symbol] += trade.Action == TradeActionEnum.Buy ? trade.EstimatedValue : -trade.EstimatedValue;
         var postCostValue = 10_000m - result.TotalTransactionCost;
         Assert.InRange(finalValues["PETR4"] / postCostValue * 100m, 29.9m, 30.1m);
         Assert.InRange(finalValues["VALE3"] / postCostValue * 100m, 34.9m, 35.1m);
@@ -57,7 +58,7 @@ public sealed class RebalancingOptimizerTests
             new RebalancingPosition("VALE3", 2_000m, 100m, 20m)
         ]);
 
-        var sale = Assert.Single(result.SuggestedTrades, trade => trade.Action == "SELL");
+        var sale = Assert.Single(result.SuggestedTrades, trade => trade.Action == TradeActionEnum.Sell);
         Assert.Equal("PETR4", sale.Symbol);
         Assert.True(result.NeedsRebalancing);
     }

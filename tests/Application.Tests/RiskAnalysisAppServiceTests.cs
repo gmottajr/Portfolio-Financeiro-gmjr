@@ -4,6 +4,7 @@ using Application.Exceptions;
 using Application.Risk;
 using Microsoft.Extensions.Logging.Abstractions;
 using Models;
+using SharedKernel.Enums;
 using SharedKernel.ValueObjects;
 
 namespace Application.Tests;
@@ -23,7 +24,7 @@ public sealed class RiskAnalysisAppServiceTests
 
         Assert.NotNull(result);
         Assert.Equal(0.0656m, result.SharpeRatio);
-        Assert.Equal("High", result.OverallRisk);
+        Assert.Equal(RiskLevelEnum.High, result.OverallRisk);
         Assert.Equal("PETR4", result.ConcentrationRisk.LargestPosition!.Symbol);
         Assert.Equal(100m, result.ConcentrationRisk.Top3Concentration);
     }
@@ -62,12 +63,12 @@ public sealed class RiskAnalysisAppServiceTests
 
         Assert.NotNull(result);
         Assert.Null(result.SharpeRatio);
-        Assert.Equal("High", result.OverallRisk);
+        Assert.Equal(RiskLevelEnum.High, result.OverallRisk);
         Assert.Equal(20m, result.ConcentrationRisk.LargestPosition!.Percentage);
         Assert.Equal(60m, result.ConcentrationRisk.Top3Concentration);
         var energy = Assert.Single(result.SectorDiversification, sector => sector.Sector == "Energy");
         Assert.Equal(60m, energy.Percentage);
-        Assert.Equal("High", energy.Risk);
+        Assert.Equal(RiskLevelEnum.High, energy.Risk);
         Assert.Contains(result.Recommendations, recommendation => recommendation.Contains("Reduzir exposição ao setor Energy (60.0%)"));
     }
 
@@ -114,7 +115,7 @@ public sealed class RiskAnalysisAppServiceTests
         var result = await CreateService(portfolio, [], null).AnalyzeAsync(portfolio.Id);
 
         Assert.NotNull(result);
-        Assert.Equal("Low", result.OverallRisk);
+        Assert.Equal(RiskLevelEnum.Low, result.OverallRisk);
         Assert.Null(result.SharpeRatio);
         Assert.Null(result.ConcentrationRisk.LargestPosition);
         Assert.Equal(0m, result.ConcentrationRisk.Top3Concentration);
@@ -133,7 +134,7 @@ public sealed class RiskAnalysisAppServiceTests
         var result = await service.AnalyzeAsync(portfolio.Id);
 
         Assert.NotNull(result);
-        Assert.Equal("Low", result.OverallRisk);
+        Assert.Equal(RiskLevelEnum.Low, result.OverallRisk);
         Assert.Equal(0m, result.ConcentrationRisk.LargestPosition!.Percentage);
         Assert.Null(result.SharpeRatio);
     }
@@ -150,8 +151,8 @@ public sealed class RiskAnalysisAppServiceTests
         var result = await CreateService(portfolio, assets, 10m).AnalyzeAsync(portfolio.Id);
 
         Assert.NotNull(result);
-        Assert.Equal("Medium", result.OverallRisk);
-        Assert.All(result.SectorDiversification, sector => Assert.Equal("Low", sector.Risk));
+        Assert.Equal(RiskLevelEnum.Medium, result.OverallRisk);
+        Assert.All(result.SectorDiversification, sector => Assert.Equal(RiskLevelEnum.Low, sector.Risk));
         Assert.Contains(result.Recommendations, recommendation => recommendation.Contains("Monitorar concentração na posição"));
     }
 
@@ -167,7 +168,7 @@ public sealed class RiskAnalysisAppServiceTests
         var result = await CreateService(portfolio, assets, 10m).AnalyzeAsync(portfolio.Id);
 
         Assert.NotNull(result);
-        Assert.Equal("Low", result.OverallRisk);
+        Assert.Equal(RiskLevelEnum.Low, result.OverallRisk);
         Assert.Equal(37.5m, result.ConcentrationRisk.Top3Concentration);
         Assert.Empty(result.Recommendations);
     }
@@ -224,7 +225,7 @@ public sealed class RiskAnalysisAppServiceTests
 
     private static Asset AssetWith(string symbol, string sector, decimal currentPrice, IEnumerable<decimal>? history = null)
     {
-        var asset = new Asset(new AssetSymbol(symbol), symbol, "Stock", sector, new Money(currentPrice), new DateTime(2025, 1, 1));
+        var asset = new Asset(new AssetSymbol(symbol), symbol, AssetTypeEnum.Stock, sector, new Money(currentPrice), new DateTime(2025, 1, 1));
         if (history is not null)
         {
             asset.SetPriceHistory(history.Select((price, index) => new PricePoint(new DateTime(2024, 1, 1).AddDays(index), new Money(price))));

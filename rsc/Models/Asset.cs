@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Abstractions._04_Domain;
 using Models.Events;
+using SharedKernel.Enums;
 using SharedKernel.Exceptions;
 using SharedKernel.ValueObjects;
 
@@ -19,7 +20,7 @@ public sealed class Asset : AggregateRoot<AssetSymbol>
 {
     public AssetSymbol Symbol => Id;
     public string Name { get; } = null!;
-    public string Type { get; } = null!;
+    public AssetTypeEnum Type { get; }
     public string Sector { get; } = null!;
     public Money CurrentPrice { get; private set; } = null!;
 
@@ -36,7 +37,7 @@ public sealed class Asset : AggregateRoot<AssetSymbol>
     // Necessário para materialização pelo Entity Framework Core.
     private Asset() { }
 
-    public Asset(AssetSymbol symbol, string name, string type, string sector, Money currentPrice, DateTime lastUpdated)
+    public Asset(AssetSymbol symbol, string name, AssetTypeEnum type, string sector, Money currentPrice, DateTime lastUpdated)
     {
         if (string.IsNullOrWhiteSpace(name))
             throw new DomainException("Asset name is required.");

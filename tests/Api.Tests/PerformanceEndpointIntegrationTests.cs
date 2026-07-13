@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Linq.Expressions;
+using System.Text.Json;
 using Application.Contracts;
 using Application.Performance;
 using Application.Risk;
@@ -16,6 +17,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Any;
 using Microsoft.OpenApi.Models;
 using Models;
+using SharedKernel.Enums;
 using SharedKernel.ValueObjects;
 using Swashbuckle.AspNetCore.Swagger;
 
@@ -87,6 +89,17 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
         Assert.Equal(100_000d, Assert.IsType<OpenApiDouble>(example["totalInvestment"]).Value);
         Assert.Equal(-19.06d, Assert.IsType<OpenApiDouble>(example["totalReturn"]).Value);
         Assert.Equal(5, Assert.IsType<OpenApiArray>(example["positionsPerformance"]).Count);
+
+        var riskLevel = swagger.Components.Schemas["RiskLevelEnum"];
+        Assert.Equal("string", riskLevel.Type);
+        Assert.Equal(
+            ["Low", "Medium", "High"],
+            riskLevel.Enum.Cast<OpenApiString>().Select(value => value.Value));
+        var tradeAction = swagger.Components.Schemas["TradeActionEnum"];
+        Assert.Equal("string", tradeAction.Type);
+        Assert.Equal(
+            ["BUY", "SELL"],
+            tradeAction.Enum.Cast<OpenApiString>().Select(value => value.Value));
     }
 
     [Fact]
@@ -137,7 +150,11 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
         var response = await _client.GetAsync("/api/portfolios/1/risk-analysis");
 
         response.EnsureSuccessStatusCode();
-        var analysis = await response.Content.ReadFromJsonAsync<RiskAnalysisResponse>();
+        var payload = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"overallRisk\":\"High\"", payload);
+        var analysis = JsonSerializer.Deserialize<RiskAnalysisResponse>(
+            payload,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
         Assert.NotNull(analysis);
         Assert.NotNull(analysis.SharpeRatio);
         Assert.NotNull(analysis.ConcentrationRisk.LargestPosition);
@@ -170,7 +187,7 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
             new DateTime(2024, 1, 1),
             [new Position(new AssetSymbol("PETR4"), new Quantity(1m), new Money(100m), new Percentage(100m))]);
         portfolio.AssignId(1);
-        var asset = new Asset(new AssetSymbol("PETR4"), "Petrobras", "Stock", "Energy", new Money(120m), new DateTime(2025, 1, 1));
+        var asset = new Asset(new AssetSymbol("PETR4"), "Petrobras", AssetTypeEnum.Stock, "Energy", new Money(120m), new DateTime(2025, 1, 1));
         asset.SetPriceHistory(
         [
             new PricePoint(new DateTime(2024, 12, 30), new Money(100m)),
@@ -288,6 +305,8 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
             "/api/portfolios/2/rebalancing?mode=exhaustive");
 
         Assert.Equal(first, second);
+        Assert.Contains("\"action\":\"SELL\"", first);
+        Assert.Contains("\"action\":\"BUY\"", first);
     }
 
     [Fact]

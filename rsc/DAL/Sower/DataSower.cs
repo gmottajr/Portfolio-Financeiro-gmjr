@@ -3,6 +3,7 @@ using Application.Contracts;
 using DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Models;
+using SharedKernel.Enums;
 using SharedKernel.ValueObjects;
 
 namespace DAL.Sower;
@@ -152,7 +153,7 @@ public sealed class DataSower(
     {
         public required string Symbol { get; init; }
         public required string Name { get; init; }
-        public required string Type { get; init; }
+        public required AssetTypeEnum Type { get; init; }
         public required string Sector { get; init; }
         public decimal CurrentPrice { get; init; }
         public DateTime LastUpdated { get; init; }

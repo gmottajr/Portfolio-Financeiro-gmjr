@@ -1,12 +1,13 @@
 using System.Globalization;
 using Models;
+using SharedKernel.Enums;
 
 namespace Application.Risk;
 
 public sealed record LargestPositionRiskResult(string Symbol, decimal Percentage);
 public sealed record ConcentrationRiskResult(LargestPositionRiskResult? LargestPosition, decimal Top3Concentration);
-public sealed record SectorDiversificationResult(string Sector, decimal Percentage, string Risk);
-public sealed record RiskAnalysisResult(string OverallRisk, decimal? SharpeRatio, ConcentrationRiskResult ConcentrationRisk, IReadOnlyList<SectorDiversificationResult> SectorDiversification, IReadOnlyList<string> Recommendations);
+public sealed record SectorDiversificationResult(string Sector, decimal Percentage, RiskLevelEnum Risk);
+public sealed record RiskAnalysisResult(RiskLevelEnum OverallRisk, decimal? SharpeRatio, ConcentrationRiskResult ConcentrationRisk, IReadOnlyList<SectorDiversificationResult> SectorDiversification, IReadOnlyList<string> Recommendations);
 public sealed record RiskPositionValue(string Symbol, Asset Asset, decimal Value);
 public sealed record RiskPositionHistory(decimal MarketValue, IReadOnlyDictionary<DateTime, decimal> DailyReturns);
 
@@ -104,8 +105,8 @@ public sealed class PortfolioRiskCalculator
             (decimal)Math.Sqrt((double)variance) * (decimal)Math.Sqrt(252d) * 100m,
             4);
     }
-    private static string CalculateOverallRisk(decimal largestPosition, IReadOnlyList<SectorDiversificationResult> sectors) { var largestSector = sectors.Count == 0 ? 0m : sectors.Max(sector => sector.Percentage); return largestPosition > 25m || largestSector > 40m ? "High" : largestPosition >= 15m || largestSector >= 25m ? "Medium" : "Low"; }
-    private static string CalculateSectorRisk(decimal percentage) => percentage > 40m ? "High" : percentage >= 25m ? "Medium" : "Low";
+    private static RiskLevelEnum CalculateOverallRisk(decimal largestPosition, IReadOnlyList<SectorDiversificationResult> sectors) { var largestSector = sectors.Count == 0 ? 0m : sectors.Max(sector => sector.Percentage); return largestPosition > 25m || largestSector > 40m ? RiskLevelEnum.High : largestPosition >= 15m || largestSector >= 25m ? RiskLevelEnum.Medium : RiskLevelEnum.Low; }
+    private static RiskLevelEnum CalculateSectorRisk(decimal percentage) => percentage > 40m ? RiskLevelEnum.High : percentage >= 25m ? RiskLevelEnum.Medium : RiskLevelEnum.Low;
     private static IReadOnlyList<string> BuildRecommendations(ConcentrationRiskResult concentration, IReadOnlyList<SectorDiversificationResult> sectors) { var recommendations = new List<string>(); foreach (var sector in sectors.Where(sector => sector.Percentage >= 25m)) { var verb = sector.Percentage > 40m ? "Reduzir" : "Monitorar"; recommendations.Add($"{verb} exposição ao setor {sector.Sector} ({FormatPercentage(sector.Percentage)}%)."); } if (concentration.LargestPosition is { Percentage: >= 15m } largest) { var verb = largest.Percentage > 25m ? "Reduzir" : "Monitorar"; recommendations.Add($"{verb} concentração na posição {largest.Symbol} ({FormatPercentage(largest.Percentage)}% do portfólio; ideal < 20%)."); } if (concentration.Top3Concentration > 60m) recommendations.Add($"Diversificar o portfólio: as três maiores posições representam {FormatPercentage(concentration.Top3Concentration)}%."); return recommendations; }
     private static decimal CalculatePercentage(decimal value, decimal total) => total == 0m ? 0m : decimal.Round(value / total * 100m, 4);
     private static string FormatPercentage(decimal value) => value.ToString("F1", CultureInfo.InvariantCulture);

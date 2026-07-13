@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Models;
+using SharedKernel.Enums;
 using SharedKernel.ValueObjects;
 
 namespace IoC.Tests;
@@ -64,7 +65,7 @@ public sealed class ServiceCollectionExtensionsTests
         var savedAsset = new Asset(
             new AssetSymbol("PETR4"),
             "Petrobras PN",
-            "Stock",
+            AssetTypeEnum.Stock,
             "Energy",
             new Money(35.50m),
             lastUpdated);
@@ -78,7 +79,7 @@ public sealed class ServiceCollectionExtensionsTests
         Assert.NotSame(savedAsset, persistedAsset);
         Assert.Equal("PETR4", persistedAsset.Symbol.Value);
         Assert.Equal("Petrobras PN", persistedAsset.Name);
-        Assert.Equal("Stock", persistedAsset.Type);
+        Assert.Equal(AssetTypeEnum.Stock, persistedAsset.Type);
         Assert.Equal("Energy", persistedAsset.Sector);
         Assert.Equal(35.50m, persistedAsset.CurrentPrice.Value);
         Assert.Equal(lastUpdated, persistedAsset.LastUpdated);

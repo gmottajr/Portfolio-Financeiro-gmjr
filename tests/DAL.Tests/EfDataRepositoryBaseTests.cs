@@ -4,6 +4,7 @@ using DAL.Data;
 using DAL.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Models;
+using SharedKernel.Enums;
 using SharedKernel.ValueObjects;
 
 namespace Persistence.Tests;
@@ -46,7 +47,7 @@ public sealed class EfDataRepositoryBaseTests
     }
 
     private static Asset Asset(string symbol, string sector) =>
-        new(new AssetSymbol(symbol), symbol, "Stock", sector, new Money(10m), new DateTime(2024, 1, 1));
+        new(new AssetSymbol(symbol), symbol, AssetTypeEnum.Stock, sector, new Money(10m), new DateTime(2024, 1, 1));
 
     private static PortfolioDbContext CreateContext() =>
         new(new DbContextOptionsBuilder<PortfolioDbContext>()

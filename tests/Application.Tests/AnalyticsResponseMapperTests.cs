@@ -2,6 +2,7 @@ using Application.Mappings;
 using Application.Performance;
 using Application.Rebalancing;
 using Application.Risk;
+using SharedKernel.Enums;
 
 namespace Application.Tests;
 
@@ -27,20 +28,20 @@ public sealed class AnalyticsResponseMapperTests
     public void ToResponse_MapsRiskResultIncludingNestedObjectsAndCollections()
     {
         var source = new RiskAnalysisResult(
-            "Medium", 1.25m,
+            RiskLevelEnum.Medium, 1.25m,
             new ConcentrationRiskResult(new LargestPositionRiskResult("VALE3", 42m), 70m),
-            [new SectorDiversificationResult("Materials", 42m, "High")],
+            [new SectorDiversificationResult("Materials", 42m, RiskLevelEnum.High)],
             ["Diversify the portfolio."]);
 
         var result = AnalyticsResponseMapper.ToResponse(source);
 
-        Assert.Equal("Medium", result.OverallRisk);
+        Assert.Equal(RiskLevelEnum.Medium, result.OverallRisk);
         Assert.Equal(1.25m, result.SharpeRatio);
         Assert.NotNull(result.ConcentrationRisk.LargestPosition);
         Assert.Equal(("VALE3", 42m, 70m),
             (result.ConcentrationRisk.LargestPosition.Symbol, result.ConcentrationRisk.LargestPosition.Percentage, result.ConcentrationRisk.Top3Concentration));
         var sector = Assert.Single(result.SectorDiversification);
-        Assert.Equal(("Materials", 42m, "High"), (sector.Sector, sector.Percentage, sector.Risk));
+        Assert.Equal(("Materials", 42m, RiskLevelEnum.High), (sector.Sector, sector.Percentage, sector.Risk));
         Assert.Equal(["Diversify the portfolio."], result.Recommendations);
     }
 
@@ -48,7 +49,7 @@ public sealed class AnalyticsResponseMapperTests
     public void ToResponse_MapsRiskResultWithNullLargestPosition()
     {
         var source = new RiskAnalysisResult(
-            "Low", null,
+            RiskLevelEnum.Low, null,
             new ConcentrationRiskResult(null, 0m),
             [], []);
 
@@ -66,7 +67,7 @@ public sealed class AnalyticsResponseMapperTests
         var source = new RebalancingResult(
             true,
             [new CurrentAllocationResult("PETR4", 60m, 50m, 10m)],
-            [new SuggestedTradeResult("PETR4", "SELL", 2m, 200m, 0.6m, "Reduce allocation.")],
+            [new SuggestedTradeResult("PETR4", TradeActionEnum.Sell, 2m, 200m, 0.6m, "Reduce allocation.")],
             0.6m,
             "Lower concentration.");
 
@@ -76,7 +77,7 @@ public sealed class AnalyticsResponseMapperTests
         var allocation = Assert.Single(result.CurrentAllocation);
         Assert.Equal(("PETR4", 60m, 50m, 10m), (allocation.Symbol, allocation.CurrentWeight, allocation.TargetWeight, allocation.Deviation));
         var trade = Assert.Single(result.SuggestedTrades);
-        Assert.Equal(("PETR4", "SELL", 2m, 200m, 0.6m, "Reduce allocation."),
+        Assert.Equal(("PETR4", TradeActionEnum.Sell, 2m, 200m, 0.6m, "Reduce allocation."),
             (trade.Symbol, trade.Action, trade.Quantity, trade.EstimatedValue, trade.TransactionCost, trade.Reason));
         Assert.Equal((0.6m, "Lower concentration."), (result.TotalTransactionCost, result.ExpectedImprovement));
     }

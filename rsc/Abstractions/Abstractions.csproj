@@ -6,10 +6,4 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Folder Include="01-Api\" />
-    <Folder Include="02-Application\" />
-    <Folder Include="03-Infra\" />
-  </ItemGroup>
-
 </Project>

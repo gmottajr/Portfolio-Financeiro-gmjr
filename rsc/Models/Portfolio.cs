@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Abstractions._04_Domain;
 using Models.Events;
+using SharedKernel.Enums;
 using SharedKernel.Exceptions;
 using SharedKernel.ValueObjects;
 
@@ -95,7 +96,7 @@ public sealed class Portfolio : AggregateRoot<int>
     /// Único ponto de entrada para aplicar uma trade de rebalanceamento:
     /// muta a Position e levanta o domain event pela raiz do agregado.
     /// </summary>
-    public void ApplyRebalanceTrade(AssetSymbol assetSymbol, string action, Quantity tradedQuantity, Quantity newQuantity, Money newAveragePrice, DateTime transactionDate)
+    public void ApplyRebalanceTrade(AssetSymbol assetSymbol, TradeActionEnum action, Quantity tradedQuantity, Quantity newQuantity, Money newAveragePrice, DateTime transactionDate)
     {
         var position = FindPosition(assetSymbol)
             ?? throw new DomainException($"Portfolio {Id} has no position for {assetSymbol}.");

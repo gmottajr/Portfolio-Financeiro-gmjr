@@ -1,4 +1,5 @@
 using System.Globalization;
+using SharedKernel.Enums;
 
 namespace Application.Rebalancing;
 
@@ -74,7 +75,7 @@ internal static class RebalancingPlanEngine
 
             trades.Add(new PlannedTrade(
                 position.Symbol,
-                delta < 0m ? "SELL" : "BUY",
+                delta < 0m ? TradeActionEnum.Sell : TradeActionEnum.Buy,
                 position.Price,
                 quantity,
                 value,
@@ -105,7 +106,7 @@ internal static class RebalancingPlanEngine
             if (quantity <= 0m || value < problem.MinimumTradeValue) continue;
             trades.Add(new PlannedTrade(
                 symbol,
-                signedValue < 0m ? "SELL" : "BUY",
+                signedValue < 0m ? TradeActionEnum.Sell : TradeActionEnum.Buy,
                 position.Price,
                 quantity,
                 value,
@@ -182,7 +183,7 @@ internal static class RebalancingPlanEngine
                     trade.Quantity,
                     trade.EstimatedValue,
                     trade.TransactionCost,
-                    $"{(trade.Action == "SELL" ? "Reduzir" : "Aumentar")} de {before.ToString("F2", CultureInfo.InvariantCulture)}% para {after.ToString("F2", CultureInfo.InvariantCulture)}% (alvo {target.ToString("F2", CultureInfo.InvariantCulture)}%).");
+                    $"{(trade.Action == TradeActionEnum.Sell ? "Reduzir" : "Aumentar")} de {before.ToString("F2", CultureInfo.InvariantCulture)}% para {after.ToString("F2", CultureInfo.InvariantCulture)}% (alvo {target.ToString("F2", CultureInfo.InvariantCulture)}%).");
             })
             .ToList();
 
@@ -221,21 +222,21 @@ internal static class RebalancingPlanEngine
         RebalancingProblem problem)
     {
         var salesNet = trades
-            .Where(trade => trade.Action == "SELL")
+            .Where(trade => trade.Action == TradeActionEnum.Sell)
             .Sum(trade => trade.EstimatedValue - trade.TransactionCost);
         var purchasesGross = trades
-            .Where(trade => trade.Action == "BUY")
+            .Where(trade => trade.Action == TradeActionEnum.Buy)
             .Sum(trade => trade.EstimatedValue + trade.TransactionCost);
         if (purchasesGross <= salesNet) return trades;
 
         foreach (var trade in trades
-                     .Where(trade => trade.Action == "BUY")
+                     .Where(trade => trade.Action == TradeActionEnum.Buy)
                      .OrderBy(trade => BenefitPriority(trade, problem))
                      .ThenBy(trade => trade.Symbol)
                      .ToList())
         {
             var otherPurchases = trades
-                .Where(item => item.Action == "BUY" && item != trade)
+                .Where(item => item.Action == TradeActionEnum.Buy && item != trade)
                 .Sum(item => item.EstimatedValue + item.TransactionCost);
             var allowedValue = decimal.Max(0m, salesNet - otherPurchases) /
                                (1m + problem.TransactionCostRate);
@@ -280,9 +281,9 @@ internal static class RebalancingPlanEngine
         var improvement = decimal.Max(0m, trackingBefore - trackingAfter);
         var costImpact = problem.TotalValue <= 0m ? 0m : totalCost / problem.TotalValue * 100m;
         var netBenefit = improvement - costImpact;
-        var salesNet = trades.Where(trade => trade.Action == "SELL")
+        var salesNet = trades.Where(trade => trade.Action == TradeActionEnum.Sell)
             .Sum(trade => trade.EstimatedValue - trade.TransactionCost);
-        var purchasesGross = trades.Where(trade => trade.Action == "BUY")
+        var purchasesGross = trades.Where(trade => trade.Action == TradeActionEnum.Buy)
             .Sum(trade => trade.EstimatedValue + trade.TransactionCost);
         var selfFinanced = purchasesGross <= salesNet + 0.01m;
         var validTrades = trades.All(trade =>
@@ -306,7 +307,7 @@ internal static class RebalancingPlanEngine
     {
         var values = problem.Positions.ToDictionary(position => position.Symbol, position => position.CurrentValue);
         foreach (var trade in trades)
-            values[trade.Symbol] += trade.Action == "BUY" ? trade.EstimatedValue : -trade.EstimatedValue;
+            values[trade.Symbol] += trade.Action == TradeActionEnum.Buy ? trade.EstimatedValue : -trade.EstimatedValue;
         return values;
     }
 
@@ -326,7 +327,7 @@ internal static class RebalancingPlanEngine
 
     private sealed record PlannedTrade(
         string Symbol,
-        string Action,
+        TradeActionEnum Action,
         decimal Price,
         decimal Quantity,
         decimal EstimatedValue,

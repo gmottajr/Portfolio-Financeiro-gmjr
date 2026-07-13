@@ -1,6 +1,7 @@
 using Application.Performance;
 using Application.Performance.Services;
 using Models;
+using SharedKernel.Enums;
 using SharedKernel.ValueObjects;
 
 namespace Application.Tests;
@@ -120,7 +121,7 @@ public sealed class PerformanceCalculatorTests
 
     private static Asset AssetWith(AssetSymbol symbol, decimal price, IEnumerable<PricePoint> history)
     {
-        var asset = new Asset(symbol, "Asset", "Stock", "Sector", new Money(price), new DateTime(2024, 1, 2));
+        var asset = new Asset(symbol, "Asset", AssetTypeEnum.Stock, "Sector", new Money(price), new DateTime(2024, 1, 2));
         asset.SetPriceHistory(history);
         return asset;
     }

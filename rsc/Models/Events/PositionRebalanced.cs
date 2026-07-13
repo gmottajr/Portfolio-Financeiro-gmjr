@@ -1,4 +1,5 @@
 ﻿using Abstractions._04_Domain;
+using SharedKernel.Enums;
 using SharedKernel.ValueObjects;
 
 namespace Models.Events;
@@ -12,10 +13,10 @@ public sealed class PositionRebalanced : DomainEventBase
 {
     public int PortfolioId { get; }
     public AssetSymbol Symbol { get; }
-    public string Action { get; } // "BUY" ou "SELL"
+    public TradeActionEnum Action { get; }
     public Quantity TradedQuantity { get; }
 
-    public PositionRebalanced(int portfolioId, AssetSymbol symbol, string action, Quantity tradedQuantity)
+    public PositionRebalanced(int portfolioId, AssetSymbol symbol, TradeActionEnum action, Quantity tradedQuantity)
     {
         PortfolioId = portfolioId;
         Symbol = symbol;

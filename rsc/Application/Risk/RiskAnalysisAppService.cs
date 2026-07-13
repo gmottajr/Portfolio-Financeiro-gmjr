@@ -3,13 +3,14 @@ using Application.Exceptions;
 using Application.Mappings;
 using Microsoft.Extensions.Logging;
 using Models;
+using SharedKernel.Enums;
 
 namespace Application.Risk;
 
 public sealed record LargestPositionRisk(string Symbol, decimal Percentage);
 public sealed record ConcentrationRiskResponse(LargestPositionRisk? LargestPosition, decimal Top3Concentration);
-public sealed record SectorDiversificationResponse(string Sector, decimal Percentage, string Risk);
-public sealed record RiskAnalysisResponse(string OverallRisk, decimal? SharpeRatio, ConcentrationRiskResponse ConcentrationRisk, IReadOnlyList<SectorDiversificationResponse> SectorDiversification, IReadOnlyList<string> Recommendations);
+public sealed record SectorDiversificationResponse(string Sector, decimal Percentage, RiskLevelEnum Risk);
+public sealed record RiskAnalysisResponse(RiskLevelEnum OverallRisk, decimal? SharpeRatio, ConcentrationRiskResponse ConcentrationRisk, IReadOnlyList<SectorDiversificationResponse> SectorDiversification, IReadOnlyList<string> Recommendations);
 
 public sealed class RiskAnalysisAppService(
     IPortfolioPositionsReader portfolios,

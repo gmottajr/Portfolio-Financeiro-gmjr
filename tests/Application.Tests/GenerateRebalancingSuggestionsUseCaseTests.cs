@@ -4,6 +4,7 @@ using Application.Exceptions;
 using Application.Rebalancing;
 using Microsoft.Extensions.Logging.Abstractions;
 using Models;
+using SharedKernel.Enums;
 using SharedKernel.ValueObjects;
 
 namespace Application.Tests;
@@ -32,8 +33,8 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
         Assert.Equal(3, result.SuggestedTrades.Count);
         Assert.All(result.SuggestedTrades, trade => Assert.True(trade.EstimatedValue >= 100m));
         Assert.All(result.SuggestedTrades, trade => Assert.Equal(decimal.Round(trade.EstimatedValue * 0.003m, 2, MidpointRounding.AwayFromZero), trade.TransactionCost));
-        var sales = result.SuggestedTrades.Where(trade => trade.Action == "SELL").Sum(trade => trade.EstimatedValue - trade.TransactionCost);
-        var purchases = result.SuggestedTrades.Where(trade => trade.Action == "BUY").Sum(trade => trade.EstimatedValue + trade.TransactionCost);
+        var sales = result.SuggestedTrades.Where(trade => trade.Action == TradeActionEnum.Sell).Sum(trade => trade.EstimatedValue - trade.TransactionCost);
+        var purchases = result.SuggestedTrades.Where(trade => trade.Action == TradeActionEnum.Buy).Sum(trade => trade.EstimatedValue + trade.TransactionCost);
         Assert.True(sales >= purchases);
         Assert.Equal(result.SuggestedTrades.Sum(trade => trade.TransactionCost), result.TotalTransactionCost);
     }
@@ -70,7 +71,7 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
         Assert.NotNull(result);
         Assert.Single(result.SuggestedTrades);
         Assert.Equal("VALE3", result.SuggestedTrades[0].Symbol);
-        Assert.Equal("SELL", result.SuggestedTrades[0].Action);
+        Assert.Equal(TradeActionEnum.Sell, result.SuggestedTrades[0].Action);
         Assert.Equal(5.0075m, result.SuggestedTrades[0].Quantity);
     }
 
@@ -154,7 +155,7 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
         new(new AssetSymbol(symbol), new Quantity(quantity), new Money(averagePrice), new Percentage(targetAllocation));
 
     private static Asset Asset(string symbol, decimal price) =>
-        new(new AssetSymbol(symbol), symbol, "Stock", "Sector", new Money(price), new DateTime(2024, 1, 1));
+        new(new AssetSymbol(symbol), symbol, AssetTypeEnum.Stock, "Sector", new Money(price), new DateTime(2024, 1, 1));
 
     private sealed class PortfolioRepositoryStub(Portfolio? portfolio) : IPortfolioPositionsReader
     {

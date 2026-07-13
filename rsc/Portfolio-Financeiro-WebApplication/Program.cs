@@ -6,8 +6,6 @@ using Portfolio_Financeiro_WebApplication.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
 builder.Services.AddPortfolioPersistence(builder.Configuration, builder.Environment);
 builder.Services.AddPortfolioPerformanceAnalysis();
@@ -32,7 +30,6 @@ builder.Services.AddRateLimiter(options =>
                 AutoReplenishment = true
             }));
 });
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -48,7 +45,6 @@ await using (var scope = app.Services.CreateAsyncScope())
     await dataSower.SowAsync();
 }
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
