@@ -85,6 +85,32 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
     }
 
     [Fact]
+    public async Task GetPerformance_ReturnsUnprocessableEntityForPortfolioWithoutPositions()
+    {
+        using var factory = new ApiWebApplicationFactory()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureLogging(logging => logging.ClearProviders());
+                builder.ConfigureServices(services =>
+                {
+                    services.RemoveAll<IPortfolioPerformanceDataReader>();
+                    services.AddScoped<IPortfolioPerformanceDataReader>(_ =>
+                        new EmptyPortfolioPerformanceDataReader());
+                });
+            });
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/portfolios/1/performance");
+
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(problem);
+        Assert.Equal("Portfolio data is incomplete.", problem.Title);
+        Assert.Equal("Portfolio 1 has no positions.", problem.Detail);
+        Assert.Equal(422, problem.Status);
+    }
+
+    [Fact]
     public async Task GetRiskAnalysis_ReturnsAnalysisForSeededPortfolio()
     {
         var response = await _client.GetAsync("/api/portfolios/1/risk-analysis");
@@ -215,6 +241,29 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
             Task.FromResult(portfolioId == 1 ? IncompletePortfolio() : null);
 
         public Task<Asset?> GetAssetAsync(AssetSymbol symbol, CancellationToken ct = default) => Task.FromResult<Asset?>(null);
+    }
+
+    private sealed class EmptyPortfolioPerformanceDataReader : IPortfolioPerformanceDataReader
+    {
+        private readonly Portfolio _portfolio = CreatePortfolio();
+
+        public Task<Portfolio?> GetPortfolioAsync(int portfolioId, CancellationToken ct = default) =>
+            Task.FromResult(portfolioId == _portfolio.Id ? _portfolio : null);
+
+        public Task<Asset?> GetAssetAsync(AssetSymbol symbol, CancellationToken ct = default) =>
+            Task.FromResult<Asset?>(null);
+
+        private static Portfolio CreatePortfolio()
+        {
+            var portfolio = new Portfolio(
+                "Empty",
+                "user",
+                new Money(100m),
+                new DateTime(2024, 1, 1),
+                []);
+            portfolio.AssignId(1);
+            return portfolio;
+        }
     }
 
     private sealed class PortfolioRepositoryStub(Portfolio portfolio) : IPortfolioPositionsReader

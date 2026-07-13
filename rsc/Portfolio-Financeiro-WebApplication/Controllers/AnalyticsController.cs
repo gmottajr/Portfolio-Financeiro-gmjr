@@ -16,6 +16,7 @@ public sealed class AnalyticsController(ISender sender, IRiskAnalysisAppService 
     [ProducesResponseType<PortfolioPerformanceResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<ActionResult<PortfolioPerformanceResponse>> GetPerformance(
         int id,
         CancellationToken ct)

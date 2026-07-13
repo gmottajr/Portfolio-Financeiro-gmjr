@@ -34,6 +34,13 @@ public sealed class GetPortfolioPerformanceQueryHandler(
                 return null;
             }
 
+            if (portfolio.Positions.Count == 0)
+            {
+                logger.LogWarning("Portfolio has no positions and cannot be analyzed.");
+                throw new PortfolioDataIncompleteException(
+                    $"Portfolio {portfolio.Id} has no positions.");
+            }
+
             logger.LogInformation("Portfolio loaded with {PositionCount} positions.", portfolio.Positions.Count);
             logger.LogDebug(
                 "Performance input loaded. TotalInvestment: {TotalInvestment}; PortfolioCreatedAt: {PortfolioCreatedAt}.",
