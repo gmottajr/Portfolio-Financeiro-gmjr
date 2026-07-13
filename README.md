@@ -229,6 +229,19 @@ Sugira transações para ajustar o portfólio:
 
 ---
 
+## 🧮 Fórmulas implementadas
+
+- **Retorno total:** `((valor atual - valor investido) / valor investido) × 100`. O investimento total é o `TotalInvestment` informado pela carteira; retorno percentual é `null` quando ele é zero.
+- **Retorno anualizado:** `((1 + retorno total / 100)^(365 / dias decorridos) - 1) × 100`.
+- **Peso da posição:** `(valor de mercado da posição / valor de mercado total) × 100`.
+- **Volatilidade diária:** para cada ativo, `r[t] = (fechamento[t] - fechamento[t-1]) / fechamento[t-1]`; o retorno diário da carteira é `Σ(peso[i] × r[i,t])` e a volatilidade é o desvio-padrão populacional desses retornos. O endpoint de performance retorna essa medida diária.
+- **Volatilidade anualizada e Sharpe:** `volatilidade diária × √252`; `Sharpe = (retorno anualizado - Selic anual) / volatilidade anualizada`. Se faltar histórico, Selic ou volatilidade, o Sharpe é `null`.
+- **Rebalanceamento:** o valor-alvo de cada ativo é `valor pós-custos × peso-alvo normalizado`. O plano resolve `valor pós-custos + 0,3% × soma dos valores negociados = valor atual`, assegurando que vendas financiem compras e custos. A quantidade é `valor negociado / preço atual`.
+
+Premissas: a última cotação do dia é o fechamento usado nos retornos; operações abaixo de R$100 e desvios de até 2 pontos percentuais não são sugeridos.
+
+---
+
 ## 🚀 Como Entregar
 
 ### 1. Submissão

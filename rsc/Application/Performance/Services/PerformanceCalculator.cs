@@ -61,9 +61,12 @@ public sealed class PerformanceCalculator : IPerformanceCalculator
             positionsWithWeight));
     }
 
+    // Return (%) = ((current value - base value) / base value) × 100.
+    // A zero base has no defined percentage return, so the API returns null.
     private static decimal? CalculatePercentageChange(decimal baseValue, decimal currentValue) =>
         baseValue == 0m ? null : decimal.Round((currentValue - baseValue) / baseValue * 100m, 4);
 
+    // Weight (%) = position market value / total portfolio market value × 100.
     private static decimal? CalculateWeight(decimal totalValue, decimal positionValue) =>
         totalValue == 0m ? null : decimal.Round(positionValue / totalValue * 100m, 4);
 
@@ -89,6 +92,7 @@ public sealed class PerformanceCalculator : IPerformanceCalculator
             return null;
         }
 
+        // Annualized return (%) = ((1 + total return)^(365 / elapsed days) - 1) × 100.
         var annualizedReturn = (Math.Pow(growthFactor, 365d / elapsedDays) - 1d) * 100d;
         return double.IsNaN(annualizedReturn)
                || double.IsInfinity(annualizedReturn)
@@ -124,6 +128,7 @@ public sealed class PerformanceCalculator : IPerformanceCalculator
                     return null;
                 }
 
+                // Daily return r[t] = (close[t] - close[t-1]) / close[t-1].
                 var dailyReturns = points
                     .Zip(points.Skip(1), (previous, current) => new
                     {
@@ -160,10 +165,13 @@ public sealed class PerformanceCalculator : IPerformanceCalculator
             return null;
         }
 
+        // Portfolio daily return r[p,t] = Σ(weight[i] × r[i,t]).
         var portfolioDailyReturns = commonDates
             .Select(date => histories.Sum(history => history.Weight * history.DailyReturns[date]))
             .ToList();
         var average = portfolioDailyReturns.Average();
+        // Daily volatility (%) = √(mean((r[p,t] - mean(r[p]))²)) × 100.
+        // The challenge requests daily volatility, so this result is not annualized.
         var variance = portfolioDailyReturns.Average(value => (value - average) * (value - average));
         return decimal.Round((decimal)Math.Sqrt((double)variance) * 100m, 4);
     }

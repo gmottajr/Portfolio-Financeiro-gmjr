@@ -38,6 +38,8 @@ public sealed class RebalancingOptimizer : IRebalancingOptimizer
             .ToList();
         if (candidates.Count == 0) return Empty(allocations);
 
+        // Solve Vpost + feeRate × Σ|Vpost × normalizedTarget[i] - currentValue[i]| = Vcurrent.
+        // This reserves transaction fees before allocating target values.
         var postCostValue = SolvePostCostValue(totalValue, candidates, targetTotal);
         var trades = BuildExecutableTrades(candidates, postCostValue, targetTotal, totalValue);
         trades = EnforceSelfFinancing(trades);
@@ -78,11 +80,13 @@ public sealed class RebalancingOptimizer : IRebalancingOptimizer
         var trades = new List<PlannedTrade>();
         foreach (var position in candidates)
         {
+            // Target value[i] = post-cost portfolio value × normalized target weight[i].
             var targetValue = postCostValue * position.TargetWeight / targetTotal;
             var delta = targetValue - position.CurrentValue;
             var estimatedValue = decimal.Round(Math.Abs(delta), 4, MidpointRounding.AwayFromZero);
             if (estimatedValue < MinimumTradeValue) continue;
 
+            // Quantity = |target value - current value| / current market price.
             var quantity = decimal.Round(estimatedValue / position.Price, 4, MidpointRounding.AwayFromZero);
             estimatedValue = decimal.Round(quantity * position.Price, 4, MidpointRounding.AwayFromZero);
             if (quantity <= 0m || estimatedValue < MinimumTradeValue) continue;
@@ -129,7 +133,9 @@ public sealed class RebalancingOptimizer : IRebalancingOptimizer
 
     private static RebalancingResult Empty(IReadOnlyList<CurrentAllocationResult> allocations) => new(false, allocations, [], 0m, "Nenhuma operação atende aos critérios de rebalanceamento.");
     private static SuggestedTradeResult ToResult(PlannedTrade trade) => new(trade.Symbol, trade.Action, trade.Quantity, trade.EstimatedValue, trade.TransactionCost, $"{(trade.Action == "SELL" ? "Reduzir" : "Aumentar")} posição para aproximar a alocação-alvo.");
+    // Transaction cost = trade value × 0.3%, rounded commercially to cents.
     private static decimal RoundCost(decimal value) => decimal.Round(value * TransactionCostRate, 2, MidpointRounding.AwayFromZero);
+    // Current allocation (%) = position value / portfolio value × 100.
     private static decimal CalculateWeight(decimal value, decimal total) => total == 0m ? 0m : decimal.Round(value / total * 100m, 4);
 
     private static string BuildExpectedImprovement(IReadOnlyList<RebalancingPosition> positions, IReadOnlyList<PlannedTrade> trades, decimal totalValue, decimal totalCost)

@@ -24,6 +24,8 @@ public sealed class PortfolioRiskCalculator
         return new RiskAnalysisResult(CalculateOverallRisk(concentration.LargestPosition?.Percentage ?? 0m, sectors), sharpeRatio, concentration, sectors, BuildRecommendations(concentration, sectors));
     }
 
+    // Position concentration (%) = position market value / portfolio market value × 100.
+    // Top-3 concentration is the sum of the three largest position percentages.
     private static ConcentrationRiskResult CalculateConcentration(IReadOnlyList<RiskPositionValue> positions, decimal totalValue)
     {
         var ordered = positions.OrderByDescending(position => position.Value).ToList();
@@ -32,13 +34,19 @@ public sealed class PortfolioRiskCalculator
         return new ConcentrationRiskResult(largestPosition, decimal.Round(ordered.Take(3).Sum(position => CalculatePercentage(position.Value, totalValue)), 4));
     }
 
+    // Sector concentration uses the same formula, grouping position values by sector.
     private static IReadOnlyList<SectorDiversificationResult> CalculateSectors(IReadOnlyList<RiskPositionValue> positions, decimal totalValue) => positions.GroupBy(position => position.Asset.Sector).Select(group => { var percentage = CalculatePercentage(group.Sum(position => position.Value), totalValue); return new SectorDiversificationResult(group.Key, percentage, CalculateSectorRisk(percentage)); }).OrderByDescending(sector => sector.Percentage).ThenBy(sector => sector.Sector).ToList();
+    // Sharpe ratio = (annualized portfolio return - annual Selic rate) / annualized volatility.
     private static decimal? CalculateSharpeRatio(decimal? portfolioReturn, decimal? selicRate, decimal? volatility) => portfolioReturn is null || selicRate is null || volatility is null || volatility == 0m ? null : decimal.Round((portfolioReturn.Value - selicRate.Value) / volatility.Value, 4);
+    // Portfolio return (%) = (current market value - invested amount) / invested amount × 100.
     private static decimal? CalculatePortfolioReturn(decimal investedAmount, decimal currentValue) => investedAmount == 0m ? null : decimal.Round((currentValue - investedAmount) / investedAmount * 100m, 4);
+    // Annualized return (%) = ((1 + total return)^(365 / elapsed days) - 1) × 100.
     private static decimal? CalculateAnnualizedReturn(decimal? totalReturn, DateTime? createdAt, DateTime? calculationDate) { if (totalReturn is null || createdAt is null || calculationDate is null) return null; var elapsedDays = (calculationDate.Value.Date - createdAt.Value.Date).TotalDays; var growthFactor = 1d + (double)(totalReturn.Value / 100m); if (elapsedDays <= 0d || growthFactor <= 0d) return null; var value = (Math.Pow(growthFactor, 365d / elapsedDays) - 1d) * 100d; return double.IsNaN(value) || double.IsInfinity(value) || value > (double)decimal.MaxValue || value < (double)decimal.MinValue ? null : decimal.Round((decimal)value, 4); }
     private static decimal? CalculateAnnualizedVolatility(IReadOnlyList<RiskPositionValue> positions, decimal totalValue)
     {
         if (totalValue <= 0m || positions.Count == 0) return null;
+        // r[i,t] = (close[i,t] - close[i,t-1]) / close[i,t-1]; portfolio
+        // r[p,t] = Σ(weight[i] × r[i,t]); annual volatility = σ[daily] × √252 × 100.
         var histories = positions.Select(position => { var points = position.Asset.PriceHistory.GroupBy(point => point.Date.Date).Select(group => group.OrderBy(point => point.Date).Last()).OrderBy(point => point.Date).ToList(); if (points.Count < 2) return null; var dailyReturns = points.Zip(points.Skip(1), (previous, current) => new { current.Date, Return = previous.Price.Value == 0m ? (decimal?)null : (current.Price.Value - previous.Price.Value) / previous.Price.Value }).Where(item => item.Return.HasValue).ToDictionary(item => item.Date.Date, item => item.Return!.Value); return dailyReturns.Count == 0 ? null : new RiskPositionHistory(position.Value / totalValue, dailyReturns); }).ToList();
         if (histories.Any(history => history is null)) return null;
         var complete = histories.Select(history => history!).ToList(); var dates = complete.Select(history => history.DailyReturns.Keys).Aggregate((dates, next) => dates.Intersect(next).ToList()); if (!dates.Any()) return null;

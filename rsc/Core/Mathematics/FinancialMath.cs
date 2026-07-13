@@ -8,6 +8,7 @@ namespace SharedKernel.Mathematics;
 
 public static class FinancialMath
 {
+    /// <summary>Return (%) = (current value - invested value) / invested value × 100.</summary>
     public static decimal CalculateReturn(
         decimal invested,
         decimal current)
@@ -18,6 +19,7 @@ public static class FinancialMath
         return (current - invested) / invested * 100;
     }
 
+    /// <summary>Weight (%) = position market value / portfolio market value × 100.</summary>
     public static decimal CalculateWeight(
         decimal position,
         decimal portfolio)
@@ -28,6 +30,7 @@ public static class FinancialMath
         return position / portfolio * 100;
     }
 
+    /// <summary>Transaction cost = trade value × 0.3%.</summary>
     public static decimal CalculateTransactionCost(
         decimal value)
     {
