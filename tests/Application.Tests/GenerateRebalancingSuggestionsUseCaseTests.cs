@@ -1,0 +1,182 @@
+using System.Linq.Expressions;
+using Abstractions._03_Infra.Persistence;
+using Application.Contracts;
+using Application.Exceptions;
+using Application.Rebalancing;
+using Microsoft.Extensions.Logging.Abstractions;
+using Models;
+using SharedKernel.ValueObjects;
+
+namespace Application.Tests;
+
+public sealed class GenerateRebalancingSuggestionsUseCaseTests
+{
+    [Fact]
+    public async Task ExecuteAsync_ReturnsAllocationsAndAccurateTradesForMaterialDeviations()
+    {
+        var portfolio = PortfolioWith(
+            1_000m,
+            Position("PETR4", 5, 100m, 30m),
+            Position("VALE3", 5, 50m, 35m),
+            Position("BBDC4", 5, 50m, 35m));
+        var service = CreateService(portfolio, Asset("PETR4", 100m), Asset("VALE3", 50m), Asset("BBDC4", 50m));
+
+        var result = await service.ExecuteAsync(portfolio.Id);
+
+        Assert.NotNull(result);
+        Assert.True(result.NeedsRebalancing);
+        Assert.Collection(
+            result.CurrentAllocation,
+            allocation => Assert.Equal(("PETR4", 50m, 30m, 20m), (allocation.Symbol, allocation.CurrentWeight, allocation.TargetWeight, allocation.Deviation)),
+            allocation => Assert.Equal(("BBDC4", 25m, 35m, -10m), (allocation.Symbol, allocation.CurrentWeight, allocation.TargetWeight, allocation.Deviation)),
+            allocation => Assert.Equal(("VALE3", 25m, 35m, -10m), (allocation.Symbol, allocation.CurrentWeight, allocation.TargetWeight, allocation.Deviation)));
+        Assert.Collection(
+            result.SuggestedTrades,
+            trade => Assert.Equal(("PETR4", "SELL", 2m, 200m, 0.60m), (trade.Symbol, trade.Action, trade.Quantity, trade.EstimatedValue, trade.TransactionCost)),
+            trade => Assert.Equal(("BBDC4", "BUY", 2m, 100m, 0.30m), (trade.Symbol, trade.Action, trade.Quantity, trade.EstimatedValue, trade.TransactionCost)),
+            trade => Assert.Equal(("VALE3", "BUY", 2m, 100m, 0.30m), (trade.Symbol, trade.Action, trade.Quantity, trade.EstimatedValue, trade.TransactionCost)));
+        Assert.Equal(1.20m, result.TotalTransactionCost);
+        Assert.Equal("Redução estimada de 15.0 pontos percentuais no risco de concentração.", result.ExpectedImprovement);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DoesNotSuggestTradesAtDeviationThresholdOrBelowMinimumValue()
+    {
+        var portfolio = PortfolioWith(
+            1_000m,
+            Position("PETR4", 5, 100m, 48m),
+            Position("VALE3", 5, 100m, 52m));
+        var service = CreateService(portfolio, Asset("PETR4", 100m), Asset("VALE3", 100m));
+
+        var result = await service.ExecuteAsync(portfolio.Id);
+
+        Assert.NotNull(result);
+        Assert.False(result.NeedsRebalancing);
+        Assert.Empty(result.SuggestedTrades);
+        Assert.Equal(0m, result.TotalTransactionCost);
+        Assert.Equal("Nenhuma operação atende aos critérios de rebalanceamento.", result.ExpectedImprovement);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_SkipsAssetsWithZeroPriceWithoutFailing()
+    {
+        var portfolio = PortfolioWith(
+            1_000m,
+            Position("PETR4", 1, 0m, 50m),
+            Position("VALE3", 10, 100m, 50m));
+        var service = CreateService(portfolio, Asset("PETR4", 0m), Asset("VALE3", 100m));
+
+        var result = await service.ExecuteAsync(portfolio.Id);
+
+        Assert.NotNull(result);
+        Assert.Single(result.SuggestedTrades);
+        Assert.Equal("VALE3", result.SuggestedTrades[0].Symbol);
+        Assert.Equal("SELL", result.SuggestedTrades[0].Action);
+        Assert.Equal(5m, result.SuggestedTrades[0].Quantity);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_RoundsTransactionCostPerTradeAwayFromZero()
+    {
+        var portfolio = PortfolioWith(
+            17_750m,
+            Position("PETR4", 250, 35.50m, 40m),
+            Position("VALE3", 250, 35.50m, 60m));
+        var service = CreateService(portfolio, Asset("PETR4", 35.50m), Asset("VALE3", 35.50m));
+
+        var result = await service.ExecuteAsync(portfolio.Id);
+
+        Assert.NotNull(result);
+        Assert.All(result.SuggestedTrades, trade =>
+        {
+            Assert.Equal(50m, trade.Quantity);
+            Assert.Equal(1_775m, trade.EstimatedValue);
+            Assert.Equal(5.33m, trade.TransactionCost);
+        });
+        Assert.Equal(10.66m, result.TotalTransactionCost);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_UsesFractionalQuantityToReachTheTargetWithPrecision()
+    {
+        var portfolio = PortfolioWith(
+            1_000m,
+            Position("PETR4", 10, 60m, 50m),
+            Position("VALE3", 10, 40m, 50m));
+        var service = CreateService(portfolio, Asset("PETR4", 60m), Asset("VALE3", 40m));
+
+        var result = await service.ExecuteAsync(portfolio.Id);
+
+        Assert.NotNull(result);
+        var sell = Assert.Single(result.SuggestedTrades, trade => trade.Symbol == "PETR4");
+        var buy = Assert.Single(result.SuggestedTrades, trade => trade.Symbol == "VALE3");
+        Assert.Equal(1.6667m, sell.Quantity);
+        Assert.Equal(100.0020m, sell.EstimatedValue);
+        Assert.Equal(2.5m, buy.Quantity);
+        Assert.Equal(100m, buy.EstimatedValue);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ReturnsNullWhenPortfolioDoesNotExist()
+    {
+        var service = CreateService(null);
+
+        Assert.Null(await service.ExecuteAsync(99));
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ReportsIncompletePortfolioDataWhenAnAssetIsMissing()
+    {
+        var portfolio = PortfolioWith(100m, Position("PETR4", 1, 100m, 100m));
+        var service = CreateService(portfolio);
+
+        var exception = await Assert.ThrowsAsync<PortfolioDataIncompleteException>(() => service.ExecuteAsync(portfolio.Id));
+
+        Assert.Contains("PETR4", exception.Message);
+    }
+
+    private static GenerateRebalancingSuggestionsUseCase CreateService(Portfolio? portfolio, params Asset[] assets) =>
+        new(new PortfolioRepositoryStub(portfolio), new AssetRepositoryStub(assets), NullLogger<GenerateRebalancingSuggestionsUseCase>.Instance);
+
+    private static Portfolio PortfolioWith(decimal totalInvestment, params Position[] positions)
+    {
+        var portfolio = new Portfolio("Test", "user", new Money(totalInvestment), new DateTime(2024, 1, 1), positions);
+        portfolio.AssignId(1);
+        return portfolio;
+    }
+
+    private static Position Position(string symbol, decimal quantity, decimal averagePrice, decimal targetAllocation) =>
+        new(new AssetSymbol(symbol), new Quantity(quantity), new Money(averagePrice), new Percentage(targetAllocation));
+
+    private static Asset Asset(string symbol, decimal price) =>
+        new(new AssetSymbol(symbol), symbol, "Stock", "Sector", new Money(price), new DateTime(2024, 1, 1));
+
+    private sealed class PortfolioRepositoryStub(Portfolio? portfolio) : IPortfolioRepository
+    {
+        public Task<Portfolio?> GetWithPositionsAsync(int id, CancellationToken ct = default) => Task.FromResult(portfolio is not null && id == portfolio.Id ? portfolio : null);
+        public Task<Portfolio?> GetByIdAsync(int id, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Portfolio>> GetAllAsync(Func<IQueryable<Portfolio>, IOrderedQueryable<Portfolio>>? orderBy = null, Expression<Func<Portfolio, object>>[]? includes = null, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Portfolio>> QueryAsync(Expression<Func<Portfolio, bool>> predicate, Func<IQueryable<Portfolio>, IOrderedQueryable<Portfolio>>? orderBy = null, Expression<Func<Portfolio, object>>[]? includes = null, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<Portfolio?> QuerySingleAsync(Expression<Func<Portfolio, bool>> predicate, Func<IQueryable<Portfolio>, IOrderedQueryable<Portfolio>>? orderBy = null, Expression<Func<Portfolio, object>>[]? includes = null, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Portfolio>> GetByUserIdAsync(string userId, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task AddAsync(Portfolio entity, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task UpdateAsync(Portfolio entity, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task DeleteAsync(int id, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task SaveChangesAsync(CancellationToken ct = default) => throw new NotSupportedException();
+    }
+
+    private sealed class AssetRepositoryStub(IEnumerable<Asset> assets) : IAssetRepository
+    {
+        private readonly IReadOnlyDictionary<AssetSymbol, Asset> _assets = assets.ToDictionary(asset => asset.Symbol);
+
+        public Task<Asset?> GetByIdAsync(AssetSymbol id, CancellationToken ct = default) => Task.FromResult(_assets.GetValueOrDefault(id));
+        public Task<Asset?> GetWithPriceHistoryAsync(AssetSymbol symbol, CancellationToken ct = default) => Task.FromResult(_assets.GetValueOrDefault(symbol));
+        public Task<IReadOnlyList<Asset>> GetAllAsync(Func<IQueryable<Asset>, IOrderedQueryable<Asset>>? orderBy = null, Expression<Func<Asset, object>>[]? includes = null, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<IReadOnlyList<Asset>> QueryAsync(Expression<Func<Asset, bool>> predicate, Func<IQueryable<Asset>, IOrderedQueryable<Asset>>? orderBy = null, Expression<Func<Asset, object>>[]? includes = null, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task<Asset?> QuerySingleAsync(Expression<Func<Asset, bool>> predicate, Func<IQueryable<Asset>, IOrderedQueryable<Asset>>? orderBy = null, Expression<Func<Asset, object>>[]? includes = null, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task AddAsync(Asset entity, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task UpdateAsync(Asset entity, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task DeleteAsync(AssetSymbol id, CancellationToken ct = default) => throw new NotSupportedException();
+        public Task SaveChangesAsync(CancellationToken ct = default) => throw new NotSupportedException();
+    }
+}

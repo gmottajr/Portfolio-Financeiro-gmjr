@@ -1,9 +1,9 @@
 using Abstractions._02_Application.Services;
 using Abstractions._04_Domain;
+using Application.Contracts;
 using DAL.Data;
 using DAL.Repositories;
-using DAL.Repositories.Contracts;
-using IoC;
+using DAL.Sower;
 using Microsoft.Extensions.DependencyInjection;
 using Models;
 using SharedKernel.ValueObjects;
@@ -102,6 +102,7 @@ public sealed class ServiceCollectionExtensionsTests
 
         Assert.IsType<AssetRepository>(scope.ServiceProvider.GetRequiredService<IAssetRepository>());
         Assert.IsType<PortfolioRepository>(scope.ServiceProvider.GetRequiredService<IPortfolioRepository>());
+        Assert.IsType<DataSower>(scope.ServiceProvider.GetRequiredService<IDataSower>());
     }
 
     private sealed class TestDomainEvent : DomainEventBase;
