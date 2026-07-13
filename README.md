@@ -116,9 +116,9 @@ A categoria `Application` está configurada em nível `Debug` no único `appsett
 - Seed automático via `IDataSower` na inicialização.
 - Algoritmos financeiros, validações, tratamento de dados faltantes e logs estruturados.
 - Três estratégias de rebalanceamento comparáveis, endpoint idempotente e rate limit por IP.
-- Testes unitários e de integração para cálculos, regras de negócio, persistência e API.
+- Testes unitários e de integração para cálculos, regras de negócio, persistência e API. As três estratégias de rebalanceamento possuem cenários end-to-end com resultados determinísticos e validação de tracking error, benefício líquido, custos, valor mínimo das operações e autofinanciamento.
 
-Na última validação local, passaram 45 testes de `Application.Tests`, 14 de `Persistence.Tests`, 25 de `Api.Tests` e 219 testes na solução completa. O build completo termina com zero erros e zero warnings.
+Na última validação local, passaram 122 testes de `SharedKernel.Tests`, 45 de `Application.Tests`, 14 de `Persistence.Tests`, 25 de `Api.Tests`, 8 de `IoC.Tests`, 4 de `Abstractions.Tests` e 1 teste de `Domain.Tests`: 219 testes na solução completa. O build completo termina com zero erros e zero warnings.
 
 ---
 

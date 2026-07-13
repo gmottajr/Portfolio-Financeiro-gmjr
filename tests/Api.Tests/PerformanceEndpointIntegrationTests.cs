@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Linq.Expressions;
+using System.Globalization;
 using System.Text.Json;
 using Application.Contracts;
 using Application.Performance;
@@ -40,6 +41,22 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
 {
     private readonly ApiWebApplicationFactory _factory;
     private readonly HttpClient _client;
+
+    public static IEnumerable<object[]> RebalancingAccuracyCases =>
+    [
+        [
+            "exhaustive", "Exhaustive", 0.1779m, 17.6269m, 87.25m,
+            "TOTS3:SELL:381.2058:11207.4505:33.62|WEGE3:BUY:167.6208:7182.5513:21.55|MGLU3:BUY:819.3614:7169.4123:21.51|RENT3:SELL:63.1597:3524.3113:10.57"
+        ],
+        [
+            "quadraticProgramming", "QuadraticProgramming", 2.4840m, 15.3277m, 75.87m,
+            "TOTS3:SELL:331.5062:9746.2823:29.24|WEGE3:BUY:145.7673:6246.1288:18.74|MGLU3:BUY:712.5375:6234.7031:18.70|RENT3:SELL:54.9253:3064.8317:9.19"
+        ],
+        [
+            "cpSat", "CpSat", 0.2203m, 17.5845m, 87.23m,
+            "TOTS3:SELL:380.6122:11189.9987:33.57|WEGE3:BUY:168.0280:7199.9998:21.60|MGLU3:BUY:820.8571:7182.4996:21.55|RENT3:SELL:62.7688:3502.4990:10.51"
+        ]
+    ];
 
     public PerformanceEndpointIntegrationTests(ApiWebApplicationFactory factory)
     {
@@ -280,12 +297,14 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
     }
 
     [Theory]
-    [InlineData("exhaustive", "Exhaustive")]
-    [InlineData("quadraticProgramming", "QuadraticProgramming")]
-    [InlineData("cpSat", "CpSat")]
-    public async Task GetRebalancing_SelectsRequestedOptimizationStrategy(
+    [MemberData(nameof(RebalancingAccuracyCases))]
+    public async Task GetRebalancing_ReturnsAccurateDeterministicResultForEachStrategy(
         string mode,
-        string expectedStrategy)
+        string expectedStrategy,
+        decimal expectedTrackingErrorAfter,
+        decimal expectedNetBenefit,
+        decimal expectedTotalCost,
+        string expectedTradeFingerprint)
     {
         var response = await _client.GetAsync($"/api/portfolios/2/rebalancing?mode={mode}");
 
@@ -294,6 +313,53 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
         Assert.NotNull(result?.Optimization);
         var alternative = Assert.Single(result.Optimization.Alternatives);
         Assert.Equal(expectedStrategy, alternative.Strategy);
+        Assert.Equal(expectedStrategy, result.Optimization.SelectedStrategy);
+        Assert.Equal("Succeeded", alternative.Status);
+        Assert.True(alternative.Metrics.IsFeasible);
+        Assert.True(alternative.Metrics.IsSelfFinanced);
+        Assert.Equal(17.8578m, alternative.Metrics.TrackingErrorBefore);
+        Assert.Equal(expectedTrackingErrorAfter, alternative.Metrics.TrackingErrorAfter);
+        Assert.Equal(expectedNetBenefit, alternative.Metrics.NetBenefit);
+        Assert.Equal(expectedTotalCost, result.TotalTransactionCost);
+        Assert.Equal(4, alternative.Metrics.TradeCount);
+        Assert.Equal(alternative.Metrics.TradeCount, alternative.SuggestedTrades.Count);
+        Assert.Equal(alternative.SuggestedTrades, result.SuggestedTrades);
+        Assert.Equal(
+            alternative.Metrics.GrossImprovement,
+            alternative.Metrics.TrackingErrorBefore - alternative.Metrics.TrackingErrorAfter);
+        Assert.Equal(
+            alternative.Metrics.NetBenefit,
+            alternative.Metrics.GrossImprovement - alternative.Metrics.CostImpact);
+        Assert.Equal(
+            result.TotalTransactionCost,
+            alternative.SuggestedTrades.Sum(trade => trade.TransactionCost));
+
+        Assert.All(alternative.SuggestedTrades, trade =>
+        {
+            Assert.True(trade.EstimatedValue >= 100m);
+            Assert.True(trade.Quantity > 0m);
+            Assert.Equal(
+                decimal.Round(trade.EstimatedValue * 0.003m, 2, MidpointRounding.AwayFromZero),
+                trade.TransactionCost);
+        });
+        var netSales = alternative.SuggestedTrades
+            .Where(trade => trade.Action == TradeActionEnum.Sell)
+            .Sum(trade => trade.EstimatedValue - trade.TransactionCost);
+        var grossPurchases = alternative.SuggestedTrades
+            .Where(trade => trade.Action == TradeActionEnum.Buy)
+            .Sum(trade => trade.EstimatedValue + trade.TransactionCost);
+        Assert.True(grossPurchases <= netSales + 0.01m);
+
+        var fingerprint = string.Join(
+            "|",
+            alternative.SuggestedTrades.Select(trade => string.Join(
+                ":",
+                trade.Symbol,
+                trade.Action.ToString().ToUpperInvariant(),
+                trade.Quantity.ToString("F4", CultureInfo.InvariantCulture),
+                trade.EstimatedValue.ToString("F4", CultureInfo.InvariantCulture),
+                trade.TransactionCost.ToString("F2", CultureInfo.InvariantCulture))));
+        Assert.Equal(expectedTradeFingerprint, fingerprint);
     }
 
     [Fact]
