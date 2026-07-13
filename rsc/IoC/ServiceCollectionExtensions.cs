@@ -98,6 +98,7 @@ public static class ServiceCollectionExtensions
         services.AddMediatR(configuration =>
             configuration.RegisterServicesFromAssemblyContaining<GetPortfolioPerformanceQueryHandler>());
         services.AddScoped<IPerformanceCalculator, PerformanceCalculator>();
+        services.AddScoped<PortfolioRiskCalculator>();
         services.AddScoped<RiskAnalysisAppService>();
         services.AddScoped<GenerateRebalancingSuggestionsUseCase>();
 

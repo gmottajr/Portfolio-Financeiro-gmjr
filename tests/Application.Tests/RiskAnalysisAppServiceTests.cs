@@ -198,6 +198,7 @@ public sealed class RiskAnalysisAppServiceTests
             new PortfolioRepositoryStub(portfolio),
             new AssetRepositoryStub(assets),
             new MarketDataReaderStub(selicRate),
+            new PortfolioRiskCalculator(),
             NullLogger<RiskAnalysisAppService>.Instance);
 
     private static Portfolio PortfolioWith(decimal investment, params Position[] positions)
