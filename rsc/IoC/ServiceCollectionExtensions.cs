@@ -106,6 +106,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<PortfolioRiskCalculator>();
         services.AddScoped<RiskAnalysisAppService>();
         services.AddScoped<IRiskAnalysisAppService>(provider => provider.GetRequiredService<RiskAnalysisAppService>());
+        services.AddSingleton<IRebalancingOptimizer, RebalancingOptimizer>();
         services.AddScoped<GenerateRebalancingSuggestionsUseCase>();
         services.AddScoped<IGenerateRebalancingSuggestionsUseCase>(provider => provider.GetRequiredService<GenerateRebalancingSuggestionsUseCase>());
 

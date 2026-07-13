@@ -11,13 +11,13 @@ namespace Application.Tests;
 public sealed class GenerateRebalancingSuggestionsUseCaseTests
 {
     [Fact]
-    public async Task ExecuteAsync_ReturnsAllocationsAndAccurateTradesForMaterialDeviations()
+    public async Task ExecuteAsync_ReturnsASelfFinancedPlanForMaterialDeviations()
     {
         var portfolio = PortfolioWith(
-            1_000m,
-            Position("PETR4", 5, 100m, 30m),
-            Position("VALE3", 5, 50m, 35m),
-            Position("BBDC4", 5, 50m, 35m));
+            10_000m,
+            Position("PETR4", 50, 100m, 30m),
+            Position("VALE3", 50, 50m, 35m),
+            Position("BBDC4", 50, 50m, 35m));
         var service = CreateService(portfolio, Asset("PETR4", 100m), Asset("VALE3", 50m), Asset("BBDC4", 50m));
 
         var result = await service.ExecuteAsync(portfolio.Id);
@@ -29,13 +29,13 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
             allocation => Assert.Equal(("PETR4", 50m, 30m, 20m), (allocation.Symbol, allocation.CurrentWeight, allocation.TargetWeight, allocation.Deviation)),
             allocation => Assert.Equal(("BBDC4", 25m, 35m, -10m), (allocation.Symbol, allocation.CurrentWeight, allocation.TargetWeight, allocation.Deviation)),
             allocation => Assert.Equal(("VALE3", 25m, 35m, -10m), (allocation.Symbol, allocation.CurrentWeight, allocation.TargetWeight, allocation.Deviation)));
-        Assert.Collection(
-            result.SuggestedTrades,
-            trade => Assert.Equal(("PETR4", "SELL", 2m, 200m, 0.60m), (trade.Symbol, trade.Action, trade.Quantity, trade.EstimatedValue, trade.TransactionCost)),
-            trade => Assert.Equal(("BBDC4", "BUY", 2m, 100m, 0.30m), (trade.Symbol, trade.Action, trade.Quantity, trade.EstimatedValue, trade.TransactionCost)),
-            trade => Assert.Equal(("VALE3", "BUY", 2m, 100m, 0.30m), (trade.Symbol, trade.Action, trade.Quantity, trade.EstimatedValue, trade.TransactionCost)));
-        Assert.Equal(1.20m, result.TotalTransactionCost);
-        Assert.Equal("Redução estimada de 15.0 pontos percentuais no risco de concentração.", result.ExpectedImprovement);
+        Assert.Equal(3, result.SuggestedTrades.Count);
+        Assert.All(result.SuggestedTrades, trade => Assert.True(trade.EstimatedValue >= 100m));
+        Assert.All(result.SuggestedTrades, trade => Assert.Equal(decimal.Round(trade.EstimatedValue * 0.003m, 2, MidpointRounding.AwayFromZero), trade.TransactionCost));
+        var sales = result.SuggestedTrades.Where(trade => trade.Action == "SELL").Sum(trade => trade.EstimatedValue - trade.TransactionCost);
+        var purchases = result.SuggestedTrades.Where(trade => trade.Action == "BUY").Sum(trade => trade.EstimatedValue + trade.TransactionCost);
+        Assert.True(sales >= purchases);
+        Assert.Equal(result.SuggestedTrades.Sum(trade => trade.TransactionCost), result.TotalTransactionCost);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
         Assert.Single(result.SuggestedTrades);
         Assert.Equal("VALE3", result.SuggestedTrades[0].Symbol);
         Assert.Equal("SELL", result.SuggestedTrades[0].Action);
-        Assert.Equal(5m, result.SuggestedTrades[0].Quantity);
+        Assert.Equal(5.0075m, result.SuggestedTrades[0].Quantity);
     }
 
     [Fact]
@@ -87,16 +87,12 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
 
         Assert.NotNull(result);
         Assert.All(result.SuggestedTrades, trade =>
-        {
-            Assert.Equal(50m, trade.Quantity);
-            Assert.Equal(1_775m, trade.EstimatedValue);
-            Assert.Equal(5.33m, trade.TransactionCost);
-        });
-        Assert.Equal(10.66m, result.TotalTransactionCost);
+            Assert.Equal(decimal.Round(trade.EstimatedValue * 0.003m, 2, MidpointRounding.AwayFromZero), trade.TransactionCost));
+        Assert.Equal(result.SuggestedTrades.Sum(trade => trade.TransactionCost), result.TotalTransactionCost);
     }
 
     [Fact]
-    public async Task ExecuteAsync_UsesFractionalQuantityToReachTheTargetWithPrecision()
+    public async Task ExecuteAsync_DiscardsSubMinimumPurchaseWhileKeepingMaterialTrade()
     {
         var portfolio = PortfolioWith(
             1_000m,
@@ -107,12 +103,10 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
         var result = await service.ExecuteAsync(portfolio.Id);
 
         Assert.NotNull(result);
-        var sell = Assert.Single(result.SuggestedTrades, trade => trade.Symbol == "PETR4");
-        var buy = Assert.Single(result.SuggestedTrades, trade => trade.Symbol == "VALE3");
-        Assert.Equal(1.6667m, sell.Quantity);
-        Assert.Equal(100.0020m, sell.EstimatedValue);
-        Assert.Equal(2.5m, buy.Quantity);
-        Assert.Equal(100m, buy.EstimatedValue);
+        var sell = Assert.Single(result.SuggestedTrades);
+        Assert.Equal("PETR4", sell.Symbol);
+        Assert.Equal("SELL", sell.Action);
+        Assert.True(sell.EstimatedValue >= 100m);
     }
 
     [Fact]
@@ -149,7 +143,7 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
     }
 
     private static GenerateRebalancingSuggestionsUseCase CreateService(Portfolio? portfolio, params Asset[] assets) =>
-        new(new PortfolioRepositoryStub(portfolio), new AssetRepositoryStub(assets), NullLogger<GenerateRebalancingSuggestionsUseCase>.Instance);
+        new(new PortfolioRepositoryStub(portfolio), new AssetRepositoryStub(assets), new RebalancingOptimizer(), NullLogger<GenerateRebalancingSuggestionsUseCase>.Instance);
 
     private static Portfolio PortfolioWith(decimal totalInvestment, params Position[] positions)
     {
