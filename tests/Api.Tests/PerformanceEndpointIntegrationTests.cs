@@ -33,7 +33,7 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
         response.EnsureSuccessStatusCode();
         var performance = await response.Content.ReadFromJsonAsync<PortfolioPerformanceResponse>();
         Assert.NotNull(performance);
-        Assert.Equal(76_800m, performance.TotalInvestment);
+        Assert.Equal(100_000m, performance.TotalInvestment);
         Assert.Equal(5, performance.PositionsPerformance.Count);
         Assert.Null(performance.Volatility);
     }

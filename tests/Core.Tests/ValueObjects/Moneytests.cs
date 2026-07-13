@@ -289,8 +289,8 @@ public class Moneytests
         Assert.Equal(18.33m, totalReturnPercentage);
     }
 
-    [Fact(DisplayName = "AlternativePath: soma das posições de um portfólio via Aggregate reproduz o totalInvestment do SeedData")]
-    public void DomainScenario_SumOfPositions_AlternativePath_MatchesPortfolioTotalInvestment()
+    [Fact(DisplayName = "AlternativePath: soma das posições de um portfólio via Aggregate calcula o capital alocado em posições")]
+    public void DomainScenario_SumOfPositions_AlternativePath_CalculatesInvestedAmountInPositions()
     {
         // Portfólio Conservador (user-001): soma de quantity * averagePrice de cada posição
         var positions = new[]

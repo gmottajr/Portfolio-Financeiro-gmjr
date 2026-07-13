@@ -37,12 +37,10 @@ public sealed class PerformanceCalculator : IPerformanceCalculator
         }).ToList();
 
         var currentValue = positions.Sum(position => position.CurrentValue);
-        // Performance is calculated from the holdings that compose the endpoint
-        // response. The seed's aggregate TotalInvestment can include money that
-        // is not represented by a Position; there is no cash position in this
-        // model, so using it here would make the portfolio result irreconcilable
-        // with its positions.
-        var totalInvestment = positions.Sum(position => position.InvestedAmount);
+        // TotalInvestment is the portfolio's initial capital, as defined by the
+        // API contract. It can include cash or investments not represented by a
+        // position, so it must not be reconstructed from the listed positions.
+        var totalInvestment = portfolio.TotalInvestment.Value;
         var totalReturnAmount = currentValue - totalInvestment;
         var totalReturn = CalculatePercentageChange(totalInvestment, currentValue);
 

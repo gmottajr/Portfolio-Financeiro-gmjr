@@ -39,7 +39,7 @@ public sealed class PerformanceCalculatorTests
     }
 
     [Fact]
-    public void Calculate_UsesPositionInvestmentAndRejectsPartialPriceHistory()
+    public void Calculate_UsesPortfolioTotalInvestmentAndRejectsPartialPriceHistory()
     {
         var petr4 = new Position(new AssetSymbol("PETR4"), new Quantity(10), new Money(10), new Percentage(50));
         var vale3 = new Position(new AssetSymbol("VALE3"), new Quantity(10), new Money(10), new Percentage(50));
@@ -53,9 +53,10 @@ public sealed class PerformanceCalculatorTests
 
         var result = _calculator.Calculate(portfolio, assets, new DateTime(2024, 1, 2));
 
-        Assert.Equal(200m, result.TotalInvestment);
+        Assert.Equal(1_000m, result.TotalInvestment);
         Assert.Equal(240m, result.CurrentValue);
-        Assert.Equal(20m, result.TotalReturn);
+        Assert.Equal(-76m, result.TotalReturn);
+        Assert.Equal(-760m, result.TotalReturnAmount);
         Assert.Null(result.Volatility);
     }
 
