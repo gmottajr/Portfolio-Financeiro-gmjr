@@ -41,6 +41,11 @@ public sealed class RebalancingOptimizerTests
         Assert.Contains(result.Optimization.Alternatives, alternative => alternative.Strategy == "Exhaustive");
         Assert.Contains(result.Optimization.Alternatives, alternative => alternative.Strategy == "QuadraticProgramming");
         Assert.Contains(result.Optimization.Alternatives, alternative => alternative.Strategy == "CpSat");
+        Assert.All(result.Optimization.Alternatives, alternative =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(alternative.Title));
+            Assert.False(string.IsNullOrWhiteSpace(alternative.Description));
+        });
     }
 
     [Fact]
@@ -85,6 +90,22 @@ public sealed class RebalancingOptimizerTests
         Assert.Equal(expectedStrategy, alternative.Strategy);
         Assert.Equal("Succeeded", alternative.Status);
         Assert.True(alternative.Metrics.IsSelfFinanced);
+        Assert.True(alternative.Metrics.IsFeasible);
+    }
+
+    [Fact]
+    public void Optimize_ExhaustivePrefersFewerTradesWithinNearOptimalBand()
+    {
+        var result = _optimizer.Optimize(
+        [
+            new RebalancingPosition("OVER", 10_000m, 100m, 30m),
+            new RebalancingPosition("SMALL", 0m, 10m, 2.1m),
+            new RebalancingPosition("MAJOR", 0m, 10m, 67.9m)
+        ], RebalancingOptimizationMode.Exhaustive);
+
+        Assert.True(result.NeedsRebalancing);
+        Assert.Equal(2, result.SuggestedTrades.Count);
+        Assert.DoesNotContain(result.SuggestedTrades, trade => trade.Symbol == "SMALL");
     }
 
     [Fact]
