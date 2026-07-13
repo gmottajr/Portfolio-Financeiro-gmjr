@@ -104,7 +104,7 @@ Os projetos `Api.Tests` e `Persistence.Tests` copiam esse mesmo arquivo ao build
 - Sem qualquer histórico suficiente, sem datas comuns entre os históricos disponíveis, divisão por zero, preço atual zero ou datas inválidas: a métrica que não pode ser calculada retorna `null` ou não gera trade, conforme o endpoint. Histórico parcial é calculado sobre as posições cobertas, com pesos renormalizados.
 - Trades só são sugeridos para desvios maiores que 2 pontos percentuais e valores de pelo menos R$100. Operações são ordenadas pelo maior desvio e o plano evita aporte externo.
 - CP-SAT trabalha em centavos inteiros, com limite determinístico de um segundo; falha ou indisponibilidade do runtime nativo é reportada na alternativa sem derrubar o endpoint.
-- Alocações/ativos ausentes para uma carteira conhecida são tratados como dados incompletos (`422`).
+- Uma carteira existente sem posições é tratada como dado incompleto por Performance (`422`), pois não há base para calcular retorno, mas como estado degenerado válido por Risk e Rebalancing (`200`, métricas neutras/nulas e nenhuma ação necessária). Já a ausência de um ativo ou cotação exigido por uma posição existente continua sendo dado incompleto (`422`) nos três casos.
 
 ### Observabilidade
 
