@@ -1,6 +1,5 @@
 using Abstractions._02_Application.Services;
 using DAL.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Models.Events;
 
@@ -12,10 +11,7 @@ public sealed class DomainEventDispatcherTests
     public async Task DispatchAsync_InvokesRegisteredHandler()
     {
         var handler = new RecordingHandler();
-        var services = new ServiceCollection()
-            .AddSingleton<IDomainEventHandler<PortfolioCreated>>(handler)
-            .BuildServiceProvider();
-        var dispatcher = new DomainEventDispatcher(services, NullLogger<DomainEventDispatcher>.Instance);
+        var dispatcher = new DomainEventDispatcher([], [handler], [], [], NullLogger<DomainEventDispatcher>.Instance);
         var domainEvent = new PortfolioCreated(7, "user-001");
 
         await dispatcher.DispatchAsync([domainEvent]);
@@ -27,11 +23,7 @@ public sealed class DomainEventDispatcherTests
     public async Task DispatchAsync_ContinuesWhenAHandlerThrows()
     {
         var succeedingHandler = new RecordingHandler();
-        var services = new ServiceCollection()
-            .AddSingleton<IDomainEventHandler<PortfolioCreated>, ThrowingHandler>()
-            .AddSingleton<IDomainEventHandler<PortfolioCreated>>(succeedingHandler)
-            .BuildServiceProvider();
-        var dispatcher = new DomainEventDispatcher(services, NullLogger<DomainEventDispatcher>.Instance);
+        var dispatcher = new DomainEventDispatcher([], [new ThrowingHandler(), succeedingHandler], [], [], NullLogger<DomainEventDispatcher>.Instance);
         var domainEvent = new PortfolioCreated(7, "user-001");
 
         await dispatcher.DispatchAsync([domainEvent]);

@@ -78,13 +78,13 @@ public sealed class ServiceCollectionExtensionsTests
     {
         var services = new ServiceCollection();
         var handler = new TestDomainEventHandler();
-        services.AddSingleton<IDomainEventHandler<TestDomainEvent>>(handler);
+        services.AddSingleton<IDomainEventHandler<Models.Events.PortfolioCreated>>(handler);
         services.AddPortfolioPersistence();
 
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
-        var domainEvent = new TestDomainEvent();
+        var domainEvent = new Models.Events.PortfolioCreated(1, "user");
 
         await dispatcher.DispatchAsync([domainEvent]);
 
@@ -106,13 +106,11 @@ public sealed class ServiceCollectionExtensionsTests
         Assert.IsType<DataSower>(scope.ServiceProvider.GetRequiredService<IDataSower>());
     }
 
-    private sealed class TestDomainEvent : DomainEventBase;
-
-    private sealed class TestDomainEventHandler : IDomainEventHandler<TestDomainEvent>
+    private sealed class TestDomainEventHandler : IDomainEventHandler<Models.Events.PortfolioCreated>
     {
-        public TestDomainEvent? HandledEvent { get; private set; }
+        public Models.Events.PortfolioCreated? HandledEvent { get; private set; }
 
-        public Task HandleAsync(TestDomainEvent domainEvent, CancellationToken ct = default)
+        public Task HandleAsync(Models.Events.PortfolioCreated domainEvent, CancellationToken ct = default)
         {
             HandledEvent = domainEvent;
             return Task.CompletedTask;
