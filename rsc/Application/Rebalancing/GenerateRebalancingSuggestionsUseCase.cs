@@ -5,14 +5,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Application.Rebalancing;
 
-public sealed record CurrentAllocation(string Symbol, decimal CurrentWeight, decimal TargetWeight, decimal Deviation);
-public sealed record SuggestedTrade(string Symbol, string Action, decimal Quantity, decimal EstimatedValue, decimal TransactionCost, string Reason);
-public sealed record RebalancingResponse(bool NeedsRebalancing, IReadOnlyList<CurrentAllocation> CurrentAllocation, IReadOnlyList<SuggestedTrade> SuggestedTrades, decimal TotalTransactionCost, string ExpectedImprovement);
-
-public sealed record CurrentAllocationResult(string Symbol, decimal CurrentWeight, decimal TargetWeight, decimal Deviation);
-public sealed record SuggestedTradeResult(string Symbol, string Action, decimal Quantity, decimal EstimatedValue, decimal TransactionCost, string Reason);
-public sealed record RebalancingResult(bool NeedsRebalancing, IReadOnlyList<CurrentAllocationResult> CurrentAllocation, IReadOnlyList<SuggestedTradeResult> SuggestedTrades, decimal TotalTransactionCost, string ExpectedImprovement);
-
 /// <summary>Loads portfolio data and delegates the financial plan to the optimizer.</summary>
 public sealed class GenerateRebalancingSuggestionsUseCase(
     IPortfolioPositionsReader portfolios,
@@ -20,7 +12,10 @@ public sealed class GenerateRebalancingSuggestionsUseCase(
     IRebalancingOptimizer optimizer,
     ILogger<GenerateRebalancingSuggestionsUseCase> logger) : IGenerateRebalancingSuggestionsUseCase
 {
-    public async Task<RebalancingResponse?> ExecuteAsync(int portfolioId, CancellationToken ct = default)
+    public async Task<RebalancingResponse?> ExecuteAsync(
+        int portfolioId,
+        RebalancingOptimizationMode mode = RebalancingOptimizationMode.CompareAll,
+        CancellationToken ct = default)
     {
         using var scope = logger.BeginScope(new Dictionary<string, object>
         {
@@ -41,7 +36,7 @@ public sealed class GenerateRebalancingSuggestionsUseCase(
             logger.LogDebug("Rebalancing input portfolio loaded with {PositionCount} positions.", portfolio.Positions.Count);
             var positions = await LoadPositionsAsync(portfolio, ct);
             logger.LogDebug("Rebalancing optimizer invoked. CurrentPortfolioValue: {CurrentPortfolioValue}; PositionCount: {PositionCount}.", positions.Sum(position => position.CurrentValue), positions.Count);
-            var result = optimizer.Optimize(positions);
+            var result = optimizer.Optimize(positions, mode);
             logger.LogDebug(
                 "Rebalancing optimizer result. NeedsRebalancing: {NeedsRebalancing}; TradeCount: {TradeCount}; TotalTransactionCost: {TotalTransactionCost}; ExpectedImprovement: {ExpectedImprovement}.",
                 result.NeedsRebalancing,

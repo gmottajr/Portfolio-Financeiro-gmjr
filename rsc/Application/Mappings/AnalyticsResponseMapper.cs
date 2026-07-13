@@ -18,4 +18,7 @@ internal static partial class AnalyticsResponseMapper
     internal static partial RebalancingResponse ToResponse(RebalancingResult source);
     internal static partial CurrentAllocation ToResponse(CurrentAllocationResult source);
     internal static partial SuggestedTrade ToResponse(SuggestedTradeResult source);
+    internal static partial RebalancingPlanMetrics ToResponse(RebalancingPlanMetricsResult source);
+    internal static partial RebalancingStrategyComparison ToResponse(RebalancingStrategyComparisonResult source);
+    internal static partial RebalancingOptimizationComparison ToResponse(RebalancingOptimizationComparisonResult source);
 }

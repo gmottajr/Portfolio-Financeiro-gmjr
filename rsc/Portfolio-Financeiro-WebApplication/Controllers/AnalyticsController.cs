@@ -4,12 +4,14 @@ using Application.Exceptions;
 using Application.Risk;
 using Application.Rebalancing;
 using MediatR;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Portfolio_Financeiro_WebApplication.Controllers;
 
 [ApiController]
 [Route("api/portfolios")]
+[EnableRateLimiting("analytics")]
 public sealed class AnalyticsController(ISender sender, IRiskAnalysisAppService riskAnalysis, IGenerateRebalancingSuggestionsUseCase rebalancing) : ControllerBase
 {
     [HttpGet("{id:int}/performance")]
@@ -17,6 +19,7 @@ public sealed class AnalyticsController(ISender sender, IRiskAnalysisAppService 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<PortfolioPerformanceResponse>> GetPerformance(
         int id,
         CancellationToken ct)
@@ -42,6 +45,7 @@ public sealed class AnalyticsController(ISender sender, IRiskAnalysisAppService 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
     public async Task<ActionResult<RiskAnalysisResponse>> GetRiskAnalysis(int id, CancellationToken ct)
     {
         if (id <= 0) return BadRequest();
@@ -61,13 +65,17 @@ public sealed class AnalyticsController(ISender sender, IRiskAnalysisAppService 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
-    public async Task<ActionResult<RebalancingResponse>> GetRebalancing(int id, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status429TooManyRequests)]
+    public async Task<ActionResult<RebalancingResponse>> GetRebalancing(
+        int id,
+        CancellationToken ct,
+        [FromQuery] RebalancingOptimizationMode mode = RebalancingOptimizationMode.CompareAll)
     {
         if (id <= 0) return BadRequest();
 
         try
         {
-            return (await rebalancing.ExecuteAsync(id, ct)) is { } result ? Ok(result) : NotFound();
+            return (await rebalancing.ExecuteAsync(id, mode, ct)) is { } result ? Ok(result) : NotFound();
         }
         catch (PortfolioDataIncompleteException exception)
         {

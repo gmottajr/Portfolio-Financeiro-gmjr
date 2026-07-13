@@ -92,7 +92,7 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_DiscardsSubMinimumPurchaseWhileKeepingMaterialTrade()
+    public async Task ExecuteAsync_KeepsOnlyTradesAtOrAboveMinimumValue()
     {
         var portfolio = PortfolioWith(
             1_000m,
@@ -103,10 +103,8 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
         var result = await service.ExecuteAsync(portfolio.Id);
 
         Assert.NotNull(result);
-        var sell = Assert.Single(result.SuggestedTrades);
-        Assert.Equal("PETR4", sell.Symbol);
-        Assert.Equal("SELL", sell.Action);
-        Assert.True(sell.EstimatedValue >= 100m);
+        Assert.NotEmpty(result.SuggestedTrades);
+        Assert.All(result.SuggestedTrades, trade => Assert.True(trade.EstimatedValue >= 100m));
     }
 
     [Fact]

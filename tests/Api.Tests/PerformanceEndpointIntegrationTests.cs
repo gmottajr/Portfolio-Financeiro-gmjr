@@ -236,6 +236,69 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
         Assert.NotNull(rebalancing.SuggestedTrades);
         Assert.NotNull(rebalancing.ExpectedImprovement);
         Assert.True(rebalancing.TotalTransactionCost >= 0m);
+        Assert.NotNull(rebalancing.Optimization);
+        Assert.Equal("CompareAll", rebalancing.Optimization.RequestedMode);
+        Assert.Equal(3, rebalancing.Optimization.Alternatives.Count);
+    }
+
+    [Theory]
+    [InlineData("exhaustive", "Exhaustive")]
+    [InlineData("quadraticProgramming", "QuadraticProgramming")]
+    [InlineData("cpSat", "CpSat")]
+    public async Task GetRebalancing_SelectsRequestedOptimizationStrategy(
+        string mode,
+        string expectedStrategy)
+    {
+        var response = await _client.GetAsync($"/api/portfolios/2/rebalancing?mode={mode}");
+
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<RebalancingResponse>();
+        Assert.NotNull(result?.Optimization);
+        var alternative = Assert.Single(result.Optimization.Alternatives);
+        Assert.Equal(expectedStrategy, alternative.Strategy);
+    }
+
+    [Fact]
+    public async Task GetRebalancing_IsIdempotentForTheSameInputs()
+    {
+        var first = await _client.GetStringAsync(
+            "/api/portfolios/2/rebalancing?mode=exhaustive");
+        var second = await _client.GetStringAsync(
+            "/api/portfolios/2/rebalancing?mode=exhaustive");
+
+        Assert.Equal(first, second);
+    }
+
+    [Fact]
+    public async Task GetRebalancing_ReturnsBadRequestForUnknownOptimizationMode()
+    {
+        var response = await _client.GetAsync(
+            "/api/portfolios/2/rebalancing?mode=unknown");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AnalyticsEndpoints_ReturnTooManyRequestsWhenRateLimitIsExceeded()
+    {
+        using var factory = new ApiWebApplicationFactory()
+            .WithWebHostBuilder(builder =>
+            {
+                builder.ConfigureLogging(logging => logging.ClearProviders());
+                builder.ConfigureAppConfiguration((_, configuration) =>
+                    configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["RateLimiting:Analytics:PermitLimit"] = "2",
+                        ["RateLimiting:Analytics:WindowSeconds"] = "60"
+                    }));
+            });
+        using var client = factory.CreateClient();
+
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/portfolios/1/performance")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/portfolios/1/performance")).StatusCode);
+        var rejected = await client.GetAsync("/api/portfolios/1/performance");
+        Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
+        Assert.True(rejected.Headers.RetryAfter?.Delta > TimeSpan.Zero);
     }
 
     private static Portfolio IncompletePortfolio()

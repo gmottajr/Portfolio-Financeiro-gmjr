@@ -132,7 +132,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<PortfolioRiskCalculator>();
         services.AddScoped<RiskAnalysisAppService>();
         services.AddScoped<IRiskAnalysisAppService>(provider => provider.GetRequiredService<RiskAnalysisAppService>());
-        services.AddSingleton<IRebalancingOptimizer, RebalancingOptimizer>();
+        services.AddSingleton<IRebalancingOptimizationStrategy, ExhaustiveSubsetOptimizationStrategy>();
+        services.AddSingleton<IRebalancingOptimizationStrategy, QuadraticProgrammingOptimizationStrategy>();
+        services.AddSingleton<IRebalancingOptimizationStrategy, CpSatOptimizationStrategy>();
+        services.AddSingleton<RebalancingStrategyRegistry>();
+        services.AddSingleton<RebalancingOptimizer>();
+        services.AddSingleton<IRebalancingOptimizer>(provider => provider.GetRequiredService<RebalancingOptimizer>());
         services.AddScoped<GenerateRebalancingSuggestionsUseCase>();
         services.AddScoped<IGenerateRebalancingSuggestionsUseCase>(provider => provider.GetRequiredService<GenerateRebalancingSuggestionsUseCase>());
 

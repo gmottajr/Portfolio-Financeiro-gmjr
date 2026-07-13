@@ -1,6 +1,7 @@
 using Abstractions._02_Application.Services;
 using Abstractions._04_Domain;
 using Application.Contracts;
+using Application.Rebalancing;
 using DAL.Data;
 using DAL.Repositories;
 using DAL.Sower;
@@ -125,6 +126,24 @@ public sealed class ServiceCollectionExtensionsTests
         Assert.IsType<AssetRepository>(scope.ServiceProvider.GetRequiredService<IAssetPriceHistoryReader>());
         Assert.IsType<PortfolioRepository>(scope.ServiceProvider.GetRequiredService<IPortfolioPositionsReader>());
         Assert.IsType<DataSower>(scope.ServiceProvider.GetRequiredService<IDataSower>());
+    }
+
+    [Fact]
+    public void AddPortfolioPerformanceAnalysis_RegistersAllRebalancingStrategies()
+    {
+        var services = new ServiceCollection();
+        services.AddPortfolioPerformanceAnalysis();
+
+        using var provider = services.BuildServiceProvider();
+        var strategies = provider.GetServices<IRebalancingOptimizationStrategy>().ToList();
+
+        Assert.Collection(
+            strategies.OrderBy(strategy => strategy.Key),
+            strategy => Assert.IsType<ExhaustiveSubsetOptimizationStrategy>(strategy),
+            strategy => Assert.IsType<QuadraticProgrammingOptimizationStrategy>(strategy),
+            strategy => Assert.IsType<CpSatOptimizationStrategy>(strategy));
+        Assert.NotNull(provider.GetRequiredService<RebalancingStrategyRegistry>());
+        Assert.IsType<RebalancingOptimizer>(provider.GetRequiredService<IRebalancingOptimizer>());
     }
 
     private sealed class TestDomainEventHandler : IDomainEventHandler<Models.Events.PortfolioCreated>

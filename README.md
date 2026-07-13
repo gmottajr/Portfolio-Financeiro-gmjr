@@ -7,6 +7,7 @@ API .NET 8 para analisar performance, risco e rebalanceamento de carteiras pré-
 ### Pré-requisitos
 
 - .NET SDK 8.0 ou superior compatível com `net8.0`.
+- O modo CP-SAT usa o runtime nativo do Google OR-Tools; no Windows, o Microsoft Visual C++ Redistributable 2022 x64 deve estar disponível.
 - Abra o PowerShell na pasta do projeto antes de executar os comandos:
 
 ```powershell
@@ -43,9 +44,11 @@ dotnet test tests/DAL.Tests/Persistence.Tests.csproj
 |---|---|
 | `GET /api/portfolios/{id}/performance` | Capital inicial, valor atual, retorno, retorno anualizado, volatilidade e performance por posição. |
 | `GET /api/portfolios/{id}/risk-analysis` | Nível de risco, Sharpe, concentração, diversificação setorial e recomendações. |
-| `GET /api/portfolios/{id}/rebalancing` | Alocações atuais, operações autofinanciadas, custos e impacto esperado na concentração. |
+| `GET /api/portfolios/{id}/rebalancing?mode={mode}` | Plano recomendado, métricas objetivas e comparação opcional entre estratégias. |
 
-Os IDs das três carteiras seed são `1`, `2` e `3`. IDs não positivos retornam `400`, carteiras inexistentes retornam `404`, e dados de carteira incompletos retornam `422` com `ProblemDetails`.
+Os IDs das três carteiras seed são `1`, `2` e `3`. IDs não positivos ou modos inválidos retornam `400`, carteiras inexistentes retornam `404`, dados incompletos retornam `422` com `ProblemDetails`, e excesso de requisições retorna `429`.
+
+O rebalanceamento aceita `recommended`, `exhaustive`, `quadraticProgramming`, `cpSat` e `compareAll` (padrão). Como é um `GET` somente leitura, chamadas repetidas com a mesma carteira e modo são idempotentes; não é necessário `Idempotency-Key`.
 
 Exemplo de chamada, depois de substituir `{url}` pelo endereço informado no console:
 
@@ -53,6 +56,7 @@ Exemplo de chamada, depois de substituir `{url}` pelo endereço informado no con
 Invoke-RestMethod "{url}/api/portfolios/1/performance"
 Invoke-RestMethod "{url}/api/portfolios/1/risk-analysis"
 Invoke-RestMethod "{url}/api/portfolios/1/rebalancing"
+Invoke-RestMethod "{url}/api/portfolios/1/rebalancing?mode=cpSat"
 ```
 
 ### Arquitetura e responsabilidades
@@ -64,7 +68,7 @@ Invoke-RestMethod "{url}/api/portfolios/1/rebalancing"
 - `IoC`: registro de dependências.
 - `tests`: testes unitários, de persistência/integração e de API.
 
-O cálculo de rebalanceamento depende de `IRebalancingOptimizer`; o caso de uso apenas lê os dados e apresenta a resposta. Essa separação mantém o algoritmo independente de HTTP, EF Core e logging.
+O cálculo de rebalanceamento usa Strategy + Registry/Factory + Orchestrator. `ExhaustiveSubsetOptimizationStrategy` compara subconjuntos, `QuadraticProgrammingOptimizationStrategy` minimiza erro quadrático e turnover, e `CpSatOptimizationStrategy` usa o solver inteiro Google OR-Tools. Todos os planos passam pelo mesmo avaliador de tracking error, custo, benefício líquido e autofinanciamento antes da seleção.
 
 ### Configuração do banco InMemory
 
@@ -72,6 +76,8 @@ Há um único arquivo de configuração: [appsettings.json](rsc/Portfolio-Financ
 
 - `Database:InMemory:ProductionName`: `portfolio-analytics-production`, usado pela API nos ambientes normais.
 - `Database:InMemory:IntegrationTestName`: `portfolio-analytics-integration-tests`, usado pela API quando o ambiente é `Testing`.
+- `RateLimiting:Analytics:PermitLimit`: máximo de requisições por janela e IP (`60`).
+- `RateLimiting:Analytics:WindowSeconds`: duração da janela fixa (`60` segundos).
 
 Os projetos `Api.Tests` e `Persistence.Tests` copiam esse mesmo arquivo ao build. A fábrica dos testes de API força o ambiente `Testing` e lê a cópia do arquivo, portanto não usa o nome de produção. Os testes de persistência ainda acrescentam um identificador único por caso ao store InMemory, isolando execuções paralelas.
 
@@ -86,6 +92,9 @@ Os projetos `Api.Tests` e `Persistence.Tests` copiam esse mesmo arquivo ao build
 - **Sharpe Ratio:** `(retorno anualizado - Selic anual) / volatilidade anualizada`. O retorno anualizado usa `Portfolio.TotalInvestment`, a mesma base do endpoint de performance, e não é reconstruído pela soma dos custos das posições.
 - **Custo de transação:** `valor negociado × 0,3%`, arredondado comercialmente para centavos.
 - **Rebalanceamento:** o valor-alvo é `valor pós-custos × peso-alvo`; o plano resolve `valor pós-custos + custos = valor atual`, para que vendas líquidas financiem compras e taxas. A quantidade é `valor negociado / preço atual`.
+- **Tracking error:** `Σ |peso projetado - peso alvo|`.
+- **Benefício líquido:** `tracking error antes - tracking error depois - (custo / valor do portfólio × 100)`.
+- **Seleção multiobjetivo:** planos dentro de 95% do melhor benefício líquido são equivalentes; entre eles vence o de menor número de trades, depois menor custo e menor tracking error.
 
 ### Regras de negócio e edge cases
 
@@ -94,6 +103,7 @@ Os projetos `Api.Tests` e `Persistence.Tests` copiam esse mesmo arquivo ao build
 - Uma cotação duplicada no mesmo dia é consolidada pela cotação mais recente, que passa a ser o fechamento diário.
 - Sem qualquer histórico suficiente, sem datas comuns entre os históricos disponíveis, divisão por zero, preço atual zero ou datas inválidas: a métrica que não pode ser calculada retorna `null` ou não gera trade, conforme o endpoint. Histórico parcial é calculado sobre as posições cobertas, com pesos renormalizados.
 - Trades só são sugeridos para desvios maiores que 2 pontos percentuais e valores de pelo menos R$100. Operações são ordenadas pelo maior desvio e o plano evita aporte externo.
+- CP-SAT trabalha em centavos inteiros, com limite determinístico de um segundo; falha ou indisponibilidade do runtime nativo é reportada na alternativa sem derrubar o endpoint.
 - Alocações/ativos ausentes para uma carteira conhecida são tratados como dados incompletos (`422`).
 
 ### Observabilidade
@@ -105,9 +115,10 @@ A categoria `Application` está configurada em nível `Debug` no único `appsett
 - AnalyticsController com três endpoints funcionais, Swagger e testes de integração.
 - Seed automático via `IDataSower` na inicialização.
 - Algoritmos financeiros, validações, tratamento de dados faltantes e logs estruturados.
+- Três estratégias de rebalanceamento comparáveis, endpoint idempotente e rate limit por IP.
 - Testes unitários e de integração para cálculos, regras de negócio, persistência e API.
 
-Na última validação local, passaram 38 testes de `Application.Tests`, 14 de `Persistence.Tests` e 13 de `Api.Tests`.
+Na última validação local, passaram 44 testes de `Application.Tests`, 14 de `Persistence.Tests`, 24 de `Api.Tests` e 216 testes na solução completa.
 
 ---
 
