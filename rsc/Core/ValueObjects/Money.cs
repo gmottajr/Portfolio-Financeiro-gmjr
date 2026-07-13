@@ -11,14 +11,11 @@ namespace SharedKernel.ValueObjects;
 /// <summary>
 /// Todo o domínio trabalha com dinheiro, então é importante ter um Value Object para representar o dinheiro de forma consistente e segura.
 /// </summary>
-public readonly record struct Money
+public sealed record Money : ValueObjectBase<decimal>
 {
     /// <summary>
     /// O valor do dinheiro, sempre arredondado para 2 casas decimais.
     /// </summary>
-    public decimal Value { get; }
-
-
     /// <summary>
     /// Representa o valor zero de dinheiro.
     /// </summary>
@@ -30,11 +27,16 @@ public readonly record struct Money
     /// <param name="value"></param>
     /// <exception cref="DomainException"></exception>
     public Money(decimal value)
+        : base(Normalize(value))
+    {
+    }
+
+    private static decimal Normalize(decimal value)
     {
         if (value < 0)
             throw new DomainException("Money cannot be negative.");
 
-        Value = decimal.Round(value, 2, MidpointRounding.ToEven);
+        return decimal.Round(value, 2, MidpointRounding.ToEven);
     }
 
     /// <summary>

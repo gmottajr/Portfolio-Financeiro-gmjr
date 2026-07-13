@@ -10,15 +10,12 @@ namespace SharedKernel.ValueObjects;
 /// <summary>
 /// Significa a taxa de retorno de um investimento, expressa em porcentagem.
 /// </summary>
-public readonly record struct ReturnRate
+public sealed record ReturnRate : ValueObjectBase<Percentage>
 {
-    public Percentage Value { get; }
-
     public ReturnRate(decimal percentage)
+        : base(new Percentage(percentage))
     {
-        Value = new Percentage(percentage);
     }
 
-    public override string ToString()
-        => Value.ToString();
+    public override string ToString() => base.ToString();
 }

@@ -10,16 +10,19 @@ namespace SharedKernel.ValueObjects;
 /// <summary>
 /// Representa quantidade de ativos. 
 /// </summary>
-public readonly record struct Quantity
+public sealed record Quantity : ValueObjectBase<decimal>
 {
-    public decimal Value { get; }
-
     public Quantity(decimal value)
+        : base(Validate(value))
+    {
+    }
+
+    private static decimal Validate(decimal value)
     {
         if (value < 0)
             throw new DomainException("Quantity cannot be negative.");
 
-        Value = value;
+        return value;
     }
 
     public static Quantity Zero => new(0);
@@ -35,6 +38,5 @@ public readonly record struct Quantity
         return new(a.Value - b.Value);
     }
 
-    public override string ToString()
-        => Value.ToString();
+    public override string ToString() => base.ToString();
 }

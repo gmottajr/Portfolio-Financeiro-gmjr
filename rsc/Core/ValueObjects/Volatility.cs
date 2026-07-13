@@ -11,18 +11,20 @@ namespace SharedKernel.ValueObjects;
 /// <summary>
 /// Métrica financeira específica que mede a volatilidade de um ativo ou portfólio de investimentos.
 /// </summary>
-public readonly record struct Volatility
+public sealed record Volatility : ValueObjectBase<Percentage>
 {
-    public Percentage Value { get; }
-
     public Volatility(decimal percentage)
+        : base(CreatePercentage(percentage))
+    {
+    }
+
+    private static Percentage CreatePercentage(decimal percentage)
     {
         if (percentage < 0)
             throw new DomainException("Volatility cannot be negative.");
 
-        Value = new Percentage(percentage);
+        return new Percentage(percentage);
     }
 
-    public override string ToString()
-        => Value.ToString();
+    public override string ToString() => base.ToString();
 }

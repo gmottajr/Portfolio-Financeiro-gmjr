@@ -10,15 +10,13 @@ namespace SharedKernel.ValueObjects;
 /// <summary>
 /// Conceito transversal para retornos e métricas de performance, representando um valor percentual.
 /// </summary>
-public readonly record struct Percentage
+public sealed record Percentage : ValueObjectBase<decimal>
 {
-    public decimal Value { get; }
-
     public static Percentage Zero => new(0m);
 
     public Percentage(decimal value)
+        : base(decimal.Round(value, 4))
     {
-        Value = decimal.Round(value, 4);
     }
 
     public decimal AsFraction()

@@ -10,7 +10,6 @@
     <Folder Include="01-Api\" />
     <Folder Include="02-Application\" />
     <Folder Include="03-Infra\" />
-    <Folder Include="05-SharedKernel\" />
   </ItemGroup>
 
 </Project>
