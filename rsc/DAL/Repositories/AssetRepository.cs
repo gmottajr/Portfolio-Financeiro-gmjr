@@ -1,7 +1,7 @@
 using Abstractions._02_Application.Services;
+using Application.Contracts;
 using DAL.Data;
 using DAL.Repositories.Abstractions;
-using DAL.Repositories.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Models;
 using SharedKernel.ValueObjects;

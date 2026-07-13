@@ -1,11 +1,17 @@
 using Abstractions._02_Application.Services;
+using Application.Contracts;
+using Application.Performance;
+using Application.Performance.Queries;
+using Application.Performance.Services;
+using Application.Risk;
+using Application.Rebalancing;
 using DAL.Data;
+using DAL.Queries;
 using DAL.Repositories;
-using DAL.Repositories.Contracts;
 using DAL.Services;
+using DAL.Sower;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace IoC;
 
@@ -26,7 +32,8 @@ public static class ServiceCollectionExtensions
             .AddPortfolioLogging()
             .AddPortfolioDbContext(databaseName)
             .AddDomainEventDispatching()
-            .AddPortfolioRepositories();
+            .AddPortfolioRepositories()
+            .AddPortfolioDataSower();
     }
 
     /// <summary>
@@ -70,6 +77,29 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<IAssetRepository, AssetRepository>();
         services.AddScoped<IPortfolioRepository, PortfolioRepository>();
+        services.AddScoped<IPortfolioPerformanceDataReader, PortfolioPerformanceDataReader>();
+        services.AddScoped<IMarketDataReader, MarketDataReader>();
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers the scoped service responsible for loading initial data.
+    /// </summary>
+    public static IServiceCollection AddPortfolioDataSower(this IServiceCollection services)
+    {
+        services.AddScoped<IDataSower, DataSower>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddPortfolioPerformanceAnalysis(this IServiceCollection services)
+    {
+        services.AddMediatR(configuration =>
+            configuration.RegisterServicesFromAssemblyContaining<GetPortfolioPerformanceQueryHandler>());
+        services.AddScoped<IPerformanceCalculator, PerformanceCalculator>();
+        services.AddScoped<RiskAnalysisAppService>();
+        services.AddScoped<GenerateRebalancingSuggestionsUseCase>();
 
         return services;
     }

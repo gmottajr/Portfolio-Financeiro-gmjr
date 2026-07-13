@@ -2,7 +2,7 @@ using Abstractions._03_Infra.Persistence;
 using Models;
 using SharedKernel.ValueObjects;
 
-namespace DAL.Repositories.Contracts;
+namespace Application.Contracts;
 
 /// <summary>
 /// Provides persistence operations for asset aggregates.

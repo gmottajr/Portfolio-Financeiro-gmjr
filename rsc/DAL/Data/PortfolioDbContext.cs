@@ -13,11 +13,16 @@ public sealed class PortfolioDbContext(DbContextOptions<PortfolioDbContext> opti
 {
     public DbSet<Asset> Assets => Set<Asset>();
     public DbSet<Portfolio> Portfolios => Set<Portfolio>();
+    public DbSet<MarketDataSnapshot> MarketDataSnapshots => Set<MarketDataSnapshot>();
+    public DbSet<SeedTestScenarioSnapshot> SeedTestScenarios => Set<SeedTestScenarioSnapshot>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ConfigureAssets(modelBuilder);
         ConfigurePortfolios(modelBuilder);
+        modelBuilder.Entity<MarketDataSnapshot>().OwnsMany(x => x.Indexes);
+        modelBuilder.Entity<MarketDataSnapshot>().OwnsMany(x => x.Sectors, sector => sector.OwnsMany(x => x.Assets));
+        modelBuilder.Entity<SeedTestScenarioSnapshot>().HasIndex(x => x.Name).IsUnique();
     }
 
     private static void ConfigureAssets(ModelBuilder modelBuilder)

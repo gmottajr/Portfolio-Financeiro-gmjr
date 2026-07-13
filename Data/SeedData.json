@@ -1,0 +1,541 @@
+{
+  "assets": [
+    {
+      "symbol": "PETR4",
+      "name": "Petrobras PN",
+      "type": "Stock",
+      "sector": "Energy",
+      "currentPrice": 35.50,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "VALE3",
+      "name": "Vale ON",
+      "type": "Stock", 
+      "sector": "Mining",
+      "currentPrice": 65.20,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "BBDC4",
+      "name": "Bradesco PN",
+      "type": "Stock",
+      "sector": "Financial",
+      "currentPrice": 15.80,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "ITUB4",
+      "name": "Itaú PN",
+      "type": "Stock",
+      "sector": "Financial", 
+      "currentPrice": 32.10,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "MGLU3",
+      "name": "Magazine Luiza ON",
+      "type": "Stock",
+      "sector": "Retail",
+      "currentPrice": 8.75,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "WEGE3",
+      "name": "Weg ON",
+      "type": "Stock",
+      "sector": "Industrial",
+      "currentPrice": 42.85,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "SUZB3",
+      "name": "Suzano ON",
+      "type": "Stock",
+      "sector": "Paper",
+      "currentPrice": 28.30,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "JBSS3",
+      "name": "JBS ON",
+      "type": "Stock",
+      "sector": "Food",
+      "currentPrice": 19.75,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "VIVT3",
+      "name": "Vivo ON",
+      "type": "Stock",
+      "sector": "Telecom",
+      "currentPrice": 45.60,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "ABEV3",
+      "name": "Ambev ON",
+      "type": "Stock",
+      "sector": "Beverages",
+      "currentPrice": 12.45,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "RENT3",
+      "name": "Localiza ON",
+      "type": "Stock",
+      "sector": "Services",
+      "currentPrice": 55.80,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "B3SA3",
+      "name": "B3 ON",
+      "type": "Stock",
+      "sector": "Financial",
+      "currentPrice": 11.90,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "TOTS3",
+      "name": "Totvs ON",
+      "type": "Stock",
+      "sector": "Technology",
+      "currentPrice": 29.40,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "GGBR4",
+      "name": "Gerdau PN",
+      "type": "Stock",
+      "sector": "Steel",
+      "currentPrice": 18.95,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    },
+    {
+      "symbol": "CCRO3",
+      "name": "CCR ON",
+      "type": "Stock",
+      "sector": "Infrastructure",
+      "currentPrice": 12.80,
+      "lastUpdated": "2024-10-06T10:30:00Z"
+    }
+  ],
+ "portfolios": [
+    {
+      "name": "Portfólio Conservador",
+      "userId": "user-001",
+      "totalInvestment": 100000.00,
+      "createdAt": "2024-01-15T09:00:00Z",
+      "positions": [
+        {
+          "assetSymbol": "PETR4",
+          "quantity": 500,
+          "averagePrice": 30.00,
+          "targetAllocation": 0.20,
+          "lastTransaction": "2024-02-20T14:30:00Z"
+        },
+        {
+          "assetSymbol": "VALE3", 
+          "quantity": 300,
+          "averagePrice": 60.00,
+          "targetAllocation": 0.25,
+          "lastTransaction": "2024-01-25T11:15:00Z"
+        },
+        {
+          "assetSymbol": "BBDC4",
+          "quantity": 1000,
+          "averagePrice": 18.00,
+          "targetAllocation": 0.20,
+          "lastTransaction": "2024-03-10T16:45:00Z"
+        },
+        {
+          "assetSymbol": "ITUB4",
+          "quantity": 600,
+          "averagePrice": 28.00,
+          "targetAllocation": 0.25,
+          "lastTransaction": "2024-02-05T13:20:00Z"
+        },
+        {
+          "assetSymbol": "WEGE3",
+          "quantity": 200,
+          "averagePrice": 45.00,
+          "targetAllocation": 0.10,
+          "lastTransaction": "2024-01-30T10:00:00Z"
+        }
+      ]
+    },
+    {
+      "name": "Portfólio Crescimento",
+      "userId": "user-002", 
+      "totalInvestment": 250000.00,
+      "createdAt": "2024-03-01T10:30:00Z",
+      "positions": [
+        {
+          "assetSymbol": "MGLU3",
+          "quantity": 2000,
+          "averagePrice": 12.50,
+          "targetAllocation": 0.15,
+          "lastTransaction": "2024-04-15T15:30:00Z"
+        },
+        {
+          "assetSymbol": "TOTS3",
+          "quantity": 1500,
+          "averagePrice": 25.80,
+          "targetAllocation": 0.20,
+          "lastTransaction": "2024-05-20T11:45:00Z"
+        },
+        {
+          "assetSymbol": "RENT3",
+          "quantity": 800,
+          "averagePrice": 52.00,
+          "targetAllocation": 0.25,
+          "lastTransaction": "2024-03-15T14:20:00Z"
+        },
+        {
+          "assetSymbol": "VALE3",
+          "quantity": 500,
+          "averagePrice": 58.40,
+          "targetAllocation": 0.20,
+          "lastTransaction": "2024-04-10T09:15:00Z"
+        },
+        {
+          "assetSymbol": "WEGE3",
+          "quantity": 600,
+          "averagePrice": 40.20,
+          "targetAllocation": 0.20,
+          "lastTransaction": "2024-05-05T16:00:00Z"
+        }
+      ]
+    },
+    {
+      "name": "Portfólio Dividendos",
+      "userId": "user-003",
+      "totalInvestment": 150000.00,
+      "createdAt": "2024-02-10T08:45:00Z",
+      "positions": [
+        {
+          "assetSymbol": "ITUB4",
+          "quantity": 1200,
+          "averagePrice": 29.50,
+          "targetAllocation": 0.30,
+          "lastTransaction": "2024-06-01T10:30:00Z"
+        },
+        {
+          "assetSymbol": "BBDC4",
+          "quantity": 1500,
+          "averagePrice": 16.80,
+          "targetAllocation": 0.25,
+          "lastTransaction": "2024-05-15T13:45:00Z"
+        },
+        {
+          "assetSymbol": "VIVT3",
+          "quantity": 400,
+          "averagePrice": 43.20,
+          "targetAllocation": 0.20,
+          "lastTransaction": "2024-04-20T14:15:00Z"
+        },
+        {
+          "assetSymbol": "CCRO3",
+          "quantity": 800,
+          "averagePrice": 14.50,
+          "targetAllocation": 0.15,
+          "lastTransaction": "2024-03-25T11:30:00Z"
+        },
+        {
+          "assetSymbol": "B3SA3",
+          "quantity": 600,
+          "averagePrice": 13.20,
+          "targetAllocation": 0.10,
+          "lastTransaction": "2024-07-10T15:20:00Z"
+        }
+      ]
+    }
+  ],
+
+"priceHistory": {
+    "PETR4": [
+      { "date": "2024-09-06", "price": 32.10 },
+      { "date": "2024-09-07", "price": 31.85 },
+      { "date": "2024-09-08", "price": 33.20 },
+      { "date": "2024-09-09", "price": 32.75 },
+      { "date": "2024-09-10", "price": 34.10 },
+      { "date": "2024-09-11", "price": 33.90 },
+      { "date": "2024-09-12", "price": 35.20 },
+      { "date": "2024-09-13", "price": 34.80 },
+      { "date": "2024-09-14", "price": 36.15 },
+      { "date": "2024-09-15", "price": 35.75 },
+      { "date": "2024-09-16", "price": 34.90 },
+      { "date": "2024-09-17", "price": 35.30 },
+      { "date": "2024-09-18", "price": 35.85 },
+      { "date": "2024-09-19", "price": 36.20 },
+      { "date": "2024-09-20", "price": 35.60 },
+      { "date": "2024-09-21", "price": 34.95 },
+      { "date": "2024-09-22", "price": 35.40 },
+      { "date": "2024-09-23", "price": 36.10 },
+      { "date": "2024-09-24", "price": 35.80 },
+      { "date": "2024-09-25", "price": 34.70 },
+      { "date": "2024-09-26", "price": 35.20 },
+      { "date": "2024-09-27", "price": 35.90 },
+      { "date": "2024-09-28", "price": 36.40 },
+      { "date": "2024-09-29", "price": 35.95 },
+      { "date": "2024-09-30", "price": 35.50 },
+      { "date": "2024-10-01", "price": 34.85 },
+      { "date": "2024-10-02", "price": 35.15 },
+      { "date": "2024-10-03", "price": 35.70 },
+      { "date": "2024-10-04", "price": 35.25 },
+      { "date": "2024-10-06", "price": 35.50 }
+    ],
+    "VALE3": [
+      { "date": "2024-09-06", "price": 62.30 },
+      { "date": "2024-09-07", "price": 63.75 },
+      { "date": "2024-09-08", "price": 61.90 },
+      { "date": "2024-09-09", "price": 64.20 },
+      { "date": "2024-09-10", "price": 65.80 },
+      { "date": "2024-09-11", "price": 64.95 },
+      { "date": "2024-09-12", "price": 66.40 },
+      { "date": "2024-09-13", "price": 65.70 },
+      { "date": "2024-09-14", "price": 63.85 },
+      { "date": "2024-09-15", "price": 64.50 },
+      { "date": "2024-09-16", "price": 65.15 },
+      { "date": "2024-09-17", "price": 66.20 },
+      { "date": "2024-09-18", "price": 64.80 },
+      { "date": "2024-09-19", "price": 65.90 },
+      { "date": "2024-09-20", "price": 64.30 },
+      { "date": "2024-09-21", "price": 63.75 },
+      { "date": "2024-09-22", "price": 65.40 },
+      { "date": "2024-09-23", "price": 66.80 },
+      { "date": "2024-09-24", "price": 65.60 },
+      { "date": "2024-09-25", "price": 64.20 },
+      { "date": "2024-09-26", "price": 65.70 },
+      { "date": "2024-09-27", "price": 66.90 },
+      { "date": "2024-09-28", "price": 65.35 },
+      { "date": "2024-09-29", "price": 64.85 },
+      { "date": "2024-09-30", "price": 65.20 },
+      { "date": "2024-10-01", "price": 64.40 },
+      { "date": "2024-10-02", "price": 65.90 },
+      { "date": "2024-10-03", "price": 66.15 },
+      { "date": "2024-10-04", "price": 65.50 },
+      { "date": "2024-10-06", "price": 65.20 }
+    ],
+    "BBDC4": [
+      { "date": "2024-09-06", "price": 16.20 },
+      { "date": "2024-09-07", "price": 15.95 },
+      { "date": "2024-09-08", "price": 16.40 },
+      { "date": "2024-09-09", "price": 15.85 },
+      { "date": "2024-09-10", "price": 16.10 },
+      { "date": "2024-09-11", "price": 15.70 },
+      { "date": "2024-09-12", "price": 16.25 },
+      { "date": "2024-09-13", "price": 15.90 },
+      { "date": "2024-09-14", "price": 15.65 },
+      { "date": "2024-09-15", "price": 16.15 },
+      { "date": "2024-09-16", "price": 15.80 },
+      { "date": "2024-09-17", "price": 16.30 },
+      { "date": "2024-09-18", "price": 15.95 },
+      { "date": "2024-09-19", "price": 16.05 },
+      { "date": "2024-09-20", "price": 15.75 },
+      { "date": "2024-09-21", "price": 15.90 },
+      { "date": "2024-09-22", "price": 16.20 },
+      { "date": "2024-09-23", "price": 15.85 },
+      { "date": "2024-09-24", "price": 16.10 },
+      { "date": "2024-09-25", "price": 15.60 },
+      { "date": "2024-09-26", "price": 15.95 },
+      { "date": "2024-09-27", "price": 16.25 },
+      { "date": "2024-09-28", "price": 15.70 },
+      { "date": "2024-09-29", "price": 15.85 },
+      { "date": "2024-09-30", "price": 15.80 },
+      { "date": "2024-10-01", "price": 16.05 },
+      { "date": "2024-10-02", "price": 15.90 },
+      { "date": "2024-10-03", "price": 16.15 },
+      { "date": "2024-10-04", "price": 15.75 },
+      { "date": "2024-10-06", "price": 15.80 }
+    ],
+    "ITUB4": [
+      { "date": "2024-09-06", "price": 31.50 },
+      { "date": "2024-09-07", "price": 32.20 },
+      { "date": "2024-09-08", "price": 31.85 },
+      { "date": "2024-09-09", "price": 32.70 },
+      { "date": "2024-09-10", "price": 31.95 },
+      { "date": "2024-09-11", "price": 32.40 },
+      { "date": "2024-09-12", "price": 31.75 },
+      { "date": "2024-09-13", "price": 32.90 },
+      { "date": "2024-09-14", "price": 31.60 },
+      { "date": "2024-09-15", "price": 32.15 },
+      { "date": "2024-09-16", "price": 31.80 },
+      { "date": "2024-09-17", "price": 32.55 },
+      { "date": "2024-09-18", "price": 32.25 },
+      { "date": "2024-09-19", "price": 31.90 },
+      { "date": "2024-09-20", "price": 32.40 },
+      { "date": "2024-09-21", "price": 31.70 },
+      { "date": "2024-09-22", "price": 32.05 },
+      { "date": "2024-09-23", "price": 32.80 },
+      { "date": "2024-09-24", "price": 31.95 },
+      { "date": "2024-09-25", "price": 31.65 },
+      { "date": "2024-09-26", "price": 32.30 },
+      { "date": "2024-09-27", "price": 32.75 },
+      { "date": "2024-09-28", "price": 31.85 },
+      { "date": "2024-09-29", "price": 32.20 },
+      { "date": "2024-09-30", "price": 32.10 },
+      { "date": "2024-10-01", "price": 31.75 },
+      { "date": "2024-10-02", "price": 32.45 },
+      { "date": "2024-10-03", "price": 32.60 },
+      { "date": "2024-10-04", "price": 31.90 },
+      { "date": "2024-10-06", "price": 32.10 }
+    ],
+    "MGLU3": [
+      { "date": "2024-09-06", "price": 9.20 },
+      { "date": "2024-09-07", "price": 8.95 },
+      { "date": "2024-09-08", "price": 9.40 },
+      { "date": "2024-09-09", "price": 8.80 },
+      { "date": "2024-09-10", "price": 9.15 },
+      { "date": "2024-09-11", "price": 8.65 },
+      { "date": "2024-09-12", "price": 9.30 },
+      { "date": "2024-09-13", "price": 8.90 },
+      { "date": "2024-09-14", "price": 8.55 },
+      { "date": "2024-09-15", "price": 9.10 },
+      { "date": "2024-09-16", "price": 8.75 },
+      { "date": "2024-09-17", "price": 9.25 },
+      { "date": "2024-09-18", "price": 8.85 },
+      { "date": "2024-09-19", "price": 9.05 },
+      { "date": "2024-09-20", "price": 8.70 },
+      { "date": "2024-09-21", "price": 8.95 },
+      { "date": "2024-09-22", "price": 9.15 },
+      { "date": "2024-09-23", "price": 8.60 },
+      { "date": "2024-09-24", "price": 8.90 },
+      { "date": "2024-09-25", "price": 8.45 },
+      { "date": "2024-09-26", "price": 8.80 },
+      { "date": "2024-09-27", "price": 9.00 },
+      { "date": "2024-09-28", "price": 8.55 },
+      { "date": "2024-09-29", "price": 8.85 },
+      { "date": "2024-09-30", "price": 8.75 },
+      { "date": "2024-10-01", "price": 8.95 },
+      { "date": "2024-10-02", "price": 8.70 },
+      { "date": "2024-10-03", "price": 9.10 },
+      { "date": "2024-10-04", "price": 8.80 },
+      { "date": "2024-10-06", "price": 8.75 }
+    ]
+},
+"marketData": {
+    "selicRate": 0.12,
+    "indexPerformance": {
+      "IBOV": {
+        "currentValue": 130245.67,
+        "dailyChange": 0.0234,
+        "monthlyChange": 0.0587,
+        "yearToDate": 0.1234
+      }
+    },
+    "sectors": [
+      {
+        "name": "Financial",
+        "averageReturn": 0.0845,
+        "volatility": 0.2134,
+        "assets": ["BBDC4", "ITUB4", "B3SA3"]
+      },
+      {
+        "name": "Energy", 
+        "averageReturn": 0.1234,
+        "volatility": 0.3456,
+        "assets": ["PETR4"]
+      },
+      {
+        "name": "Mining",
+        "averageReturn": 0.0987,
+        "volatility": 0.2890,
+        "assets": ["VALE3"]
+      },
+      {
+        "name": "Retail",
+        "averageReturn": -0.0234,
+        "volatility": 0.4567,
+        "assets": ["MGLU3"]
+      },
+      {
+        "name": "Industrial", 
+        "averageReturn": 0.1567,
+        "volatility": 0.2345,
+        "assets": ["WEGE3"]
+      },
+      {
+        "name": "Technology",
+        "averageReturn": 0.2134,
+        "volatility": 0.3789,
+        "assets": ["TOTS3"]
+      }
+    ]
+  },
+  "testScenarios": [
+    {
+      "name": "Portfolio Desbalanceado",
+      "description": "Cenário para testar algoritmo de rebalanceamento",
+      "portfolio": {
+        "name": "Teste Rebalanceamento",
+        "userId": "test-user",
+        "totalInvestment": 50000.00,
+        "positions": [
+          { "assetSymbol": "PETR4", "quantity": 800, "averagePrice": 32.00, "targetAllocation": 0.25 },
+          { "assetSymbol": "VALE3", "quantity": 200, "averagePrice": 63.00, "targetAllocation": 0.25 },
+          { "assetSymbol": "ITUB4", "quantity": 400, "averagePrice": 31.00, "targetAllocation": 0.25 },
+          { "assetSymbol": "MGLU3", "quantity": 300, "averagePrice": 10.00, "targetAllocation": 0.25 }
+        ]
+      },
+      "expectedResults": {
+        "totalValue": 51050.00,
+        "allocations": {
+          "PETR4": 0.556,
+          "VALE3": 0.255,
+          "ITUB4": 0.252,
+          "MGLU3": 0.051
+        },
+        "rebalancingNeeded": true,
+        "suggestedActions": [
+          { "action": "SELL", "asset": "PETR4", "value": 15000.00 },
+          { "action": "BUY", "asset": "MGLU3", "value": 9500.00 },
+          { "action": "BUY", "asset": "ITUB4", "value": 5500.00 }
+        ]
+      }
+    },
+    {
+      "name": "Alto Risco Concentração",
+      "description": "Portfolio com alta concentração em um ativo",
+      "portfolio": {
+        "name": "Teste Concentração",
+        "userId": "test-user-2", 
+        "totalInvestment": 80000.00,
+        "positions": [
+          { "assetSymbol": "VALE3", "quantity": 1000, "averagePrice": 60.00, "targetAllocation": 0.70 },
+          { "assetSymbol": "PETR4", "quantity": 200, "averagePrice": 35.00, "targetAllocation": 0.20 },
+          { "assetSymbol": "ITUB4", "quantity": 100, "averagePrice": 32.00, "targetAllocation": 0.10 }
+        ]
+      },
+      "expectedResults": {
+        "concentrationRisk": 0.817,
+        "riskLevel": "HIGH",
+        "alerts": [
+          "Concentração acima de 80% em um único ativo",
+          "Setor de mineração representa mais de 80% do portfolio"
+        ]
+      }
+    },
+    {
+      "name": "Performance Calculation Test",
+      "description": "Dados específicos para testar cálculos de performance",
+      "portfolio": {
+        "name": "Teste Performance",
+        "userId": "test-user-3",
+        "totalInvestment": 30000.00,
+        "createdAt": "2024-01-01T00:00:00Z",
+        "positions": [
+          { "assetSymbol": "WEGE3", "quantity": 500, "averagePrice": 40.00, "targetAllocation": 0.67 },
+          { "assetSymbol": "TOTS3", "quantity": 300, "averagePrice": 25.00, "targetAllocation": 0.33 }
+        ]
+      },
+      "expectedResults": {
+        "totalReturn": 0.169,
+        "annualizedReturn": 0.187,
+        "sharpeRatio": 1.234,
+        "volatility": 0.089
+      }
+    }
+  ]
+}

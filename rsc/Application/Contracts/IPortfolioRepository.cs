@@ -1,7 +1,7 @@
 using Abstractions._03_Infra.Persistence;
 using Models;
 
-namespace DAL.Repositories.Contracts;
+namespace Application.Contracts;
 
 /// <summary>
 /// Provides persistence operations for portfolio aggregates.

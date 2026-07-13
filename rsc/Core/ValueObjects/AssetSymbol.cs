@@ -31,7 +31,9 @@ public readonly partial record struct AssetSymbol
         Value = value;
     }
 
-    [GeneratedRegex(@"^[A-Z]{4}[0-9]{1,2}$")]
+    // B3SA3 is a valid B3 ticker even though it does not use the usual
+    // four-letter prefix (for example, PETR4 or TAEE11).
+    [GeneratedRegex(@"^(?:[A-Z]{4}|[A-Z][0-9][A-Z]{2})[0-9]{1,2}$")]
     private static partial Regex SymbolRegex();
 
     public override string ToString()

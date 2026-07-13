@@ -9,7 +9,12 @@
 
   <ItemGroup>
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <ProjectReference Include="..\Application\Application.csproj" />
     <ProjectReference Include="..\IoC\IoC.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\Data\SeedData.json" Link="Data\SeedData.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
