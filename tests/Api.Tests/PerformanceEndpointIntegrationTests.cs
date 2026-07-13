@@ -11,19 +11,49 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Models;
 using SharedKernel.ValueObjects;
 
 namespace Api.Tests;
 
-public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public sealed class ApiWebApplicationFactory : WebApplicationFactory<Program>
 {
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        builder.UseEnvironment("Testing");
+        builder.ConfigureAppConfiguration((_, configuration) =>
+            configuration.AddJsonFile(
+                Path.Combine(AppContext.BaseDirectory, "appsettings.json"),
+                optional: false,
+                reloadOnChange: false));
+    }
+}
+
+public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebApplicationFactory>
+{
+    private readonly ApiWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public PerformanceEndpointIntegrationTests(WebApplicationFactory<Program> factory) =>
+    public PerformanceEndpointIntegrationTests(ApiWebApplicationFactory factory)
+    {
+        _factory = factory;
         _client = factory
             .WithWebHostBuilder(builder => builder.ConfigureLogging(logging => logging.ClearProviders()))
             .CreateClient();
+    }
+
+    [Fact]
+    public void Factory_UsesTestingEnvironmentAndSharedIntegrationDatabaseConfiguration()
+    {
+        var environment = _factory.Services.GetRequiredService<IHostEnvironment>();
+        var configuration = _factory.Services.GetRequiredService<IConfiguration>();
+
+        Assert.Equal("Testing", environment.EnvironmentName);
+        Assert.Equal("portfolio-analytics-integration-tests", configuration["Database:InMemory:IntegrationTestName"]);
+        Assert.NotEqual(configuration["Database:InMemory:ProductionName"], configuration["Database:InMemory:IntegrationTestName"]);
+    }
 
     [Fact]
     public async Task GetPerformance_ReturnsCalculatedPerformanceForSeededPortfolio()
@@ -86,7 +116,7 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
             new PricePoint(new DateTime(2025, 1, 1), new Money(100m))
         ]);
 
-        using var factory = new WebApplicationFactory<Program>()
+        using var factory = new ApiWebApplicationFactory()
             .WithWebHostBuilder(builder => builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IPortfolioPositionsReader>();
@@ -126,7 +156,7 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
     [InlineData("/api/portfolios/1/rebalancing")]
     public async Task AnalyticsEndpoints_ReturnUnprocessableEntityForIncompletePortfolioData(string url)
     {
-        using var factory = new WebApplicationFactory<Program>()
+        using var factory = new ApiWebApplicationFactory()
             .WithWebHostBuilder(builder =>
             {
                 builder.ConfigureLogging(logging => logging.ClearProviders());

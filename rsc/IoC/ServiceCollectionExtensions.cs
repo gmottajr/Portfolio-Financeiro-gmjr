@@ -11,13 +11,39 @@ using DAL.Repositories;
 using DAL.Services;
 using DAL.Sower;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 namespace IoC;
 
 /// <summary>Registros de infraestrutura expostos para a camada de composição.</summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Selects the configured in-memory database for the current host environment.
+    /// Integration tests use a dedicated name and never share the production store.
+    /// </summary>
+    public static IServiceCollection AddPortfolioPersistence(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment)
+    {
+        ArgumentNullException.ThrowIfNull(configuration);
+        ArgumentNullException.ThrowIfNull(environment);
+
+        var configurationKey = environment.IsEnvironment("Testing")
+            ? "Database:InMemory:IntegrationTestName"
+            : "Database:InMemory:ProductionName";
+        var databaseName = configuration[configurationKey];
+        if (string.IsNullOrWhiteSpace(databaseName))
+        {
+            throw new InvalidOperationException($"The in-memory database name '{configurationKey}' must be configured.");
+        }
+
+        return services.AddPortfolioPersistence(databaseName);
+    }
+
     /// <summary>
     /// Registra a persistência local usada pela aplicação. O provider e o
     /// DbContext continuam encapsulados nas camadas de infraestrutura/IoC.

@@ -1,5 +1,6 @@
 using DAL.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Models;
 using SharedKernel.Exceptions;
 using SharedKernel.ValueObjects;
@@ -190,8 +191,13 @@ public sealed class PortfolioDbContextIntegrationTests
 
     private static PortfolioDbContext CreateContext()
     {
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.json"), optional: false)
+            .Build();
+        var integrationDatabaseName = configuration["Database:InMemory:IntegrationTestName"]
+            ?? throw new InvalidOperationException("Integration test database name is not configured.");
         var options = new DbContextOptionsBuilder<PortfolioDbContext>()
-            .UseInMemoryDatabase(Guid.NewGuid().ToString("N"))
+            .UseInMemoryDatabase($"{integrationDatabaseName}-{Guid.NewGuid():N}")
             .Options;
 
         return new PortfolioDbContext(options);

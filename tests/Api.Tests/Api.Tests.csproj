@@ -25,4 +25,8 @@
     <ProjectReference Include="..\..\rsc\Portfolio-Financeiro-WebApplication\PortfolioAnalytics.WebApi.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\rsc\Portfolio-Financeiro-WebApplication\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -5,6 +5,9 @@ using DAL.Data;
 using DAL.Repositories;
 using DAL.Sower;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
 using Models;
 using SharedKernel.ValueObjects;
 
@@ -12,6 +15,24 @@ namespace IoC.Tests;
 
 public sealed class ServiceCollectionExtensionsTests
 {
+    [Fact]
+    public void AddPortfolioPersistence_UsesIntegrationDatabaseConfigurationForTestingEnvironment()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Database:InMemory:ProductionName"] = "production-database",
+                ["Database:InMemory:IntegrationTestName"] = "integration-database"
+            })
+            .Build();
+        var services = new ServiceCollection();
+
+        services.AddPortfolioPersistence(configuration, new TestHostEnvironment("Testing"));
+
+        using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
+        Assert.Equal("Microsoft.EntityFrameworkCore.InMemory", scope.ServiceProvider.GetRequiredService<PortfolioDbContext>().Database.ProviderName);
+    }
     [Fact]
     public void AddPortfolioPersistence_RegistersScopedInMemoryDbContext()
     {
@@ -115,5 +136,13 @@ public sealed class ServiceCollectionExtensionsTests
             HandledEvent = domainEvent;
             return Task.CompletedTask;
         }
+    }
+
+    private sealed class TestHostEnvironment(string environmentName) : IHostEnvironment
+    {
+        public string EnvironmentName { get; set; } = environmentName;
+        public string ApplicationName { get; set; } = "IoC.Tests";
+        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 }
