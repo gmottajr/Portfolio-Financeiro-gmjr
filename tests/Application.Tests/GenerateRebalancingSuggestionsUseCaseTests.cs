@@ -125,6 +125,20 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
     }
 
     [Fact]
+    public async Task ExecuteAsync_DoesNotSuggestTradesWhenPortfolioCurrentValueIsZero()
+    {
+        var portfolio = PortfolioWith(0m, Position("PETR4", 1m, 0m, 100m));
+        var service = CreateService(portfolio, Asset("PETR4", 0m));
+
+        var result = await service.ExecuteAsync(portfolio.Id);
+
+        Assert.NotNull(result);
+        Assert.False(result.NeedsRebalancing);
+        Assert.Empty(result.SuggestedTrades);
+        Assert.Equal("Nenhuma operação atende aos critérios de rebalanceamento.", result.ExpectedImprovement);
+    }
+
+    [Fact]
     public async Task ExecuteAsync_ReportsIncompletePortfolioDataWhenAnAssetIsMissing()
     {
         var portfolio = PortfolioWith(100m, Position("PETR4", 1, 100m, 100m));
