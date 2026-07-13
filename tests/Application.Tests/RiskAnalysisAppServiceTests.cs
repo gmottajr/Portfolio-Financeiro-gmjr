@@ -23,7 +23,7 @@ public sealed class RiskAnalysisAppServiceTests
         var result = await service.AnalyzeAsync(portfolio.Id);
 
         Assert.NotNull(result);
-        Assert.Equal(1.0476m, result.SharpeRatio);
+        Assert.Equal(0.0656m, result.SharpeRatio);
         Assert.Equal("High", result.OverallRisk);
         Assert.Equal("PETR4", result.ConcentrationRisk.LargestPosition!.Symbol);
         Assert.Equal(100m, result.ConcentrationRisk.Top3Concentration);
@@ -209,7 +209,7 @@ public sealed class RiskAnalysisAppServiceTests
 
     private static Asset AssetWith(string symbol, string sector, decimal currentPrice, IEnumerable<decimal>? history = null)
     {
-        var asset = new Asset(new AssetSymbol(symbol), symbol, "Stock", sector, new Money(currentPrice), new DateTime(2024, 1, 3));
+        var asset = new Asset(new AssetSymbol(symbol), symbol, "Stock", sector, new Money(currentPrice), new DateTime(2025, 1, 1));
         if (history is not null)
         {
             asset.SetPriceHistory(history.Select((price, index) => new PricePoint(new DateTime(2024, 1, 1).AddDays(index), new Money(price))));

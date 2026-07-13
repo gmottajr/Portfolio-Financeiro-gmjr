@@ -63,10 +63,48 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
         response.EnsureSuccessStatusCode();
         var analysis = await response.Content.ReadFromJsonAsync<RiskAnalysisResponse>();
         Assert.NotNull(analysis);
-        Assert.NotNull(analysis.SharpeRatio);
+        Assert.Null(analysis.SharpeRatio);
         Assert.NotNull(analysis.ConcentrationRisk.LargestPosition);
         Assert.NotEmpty(analysis.SectorDiversification);
         Assert.NotNull(analysis.Recommendations);
+    }
+
+    [Fact]
+    public async Task GetRiskAnalysis_UsesAnnualizedReturnAndVolatilityForSharpeRatio()
+    {
+        var portfolio = new Portfolio(
+            "Sharpe",
+            "user",
+            new Money(100m),
+            new DateTime(2024, 1, 1),
+            [new Position(new AssetSymbol("PETR4"), new Quantity(1m), new Money(100m), new Percentage(100m))]);
+        portfolio.AssignId(1);
+        var asset = new Asset(new AssetSymbol("PETR4"), "Petrobras", "Stock", "Energy", new Money(120m), new DateTime(2025, 1, 1));
+        asset.SetPriceHistory(
+        [
+            new PricePoint(new DateTime(2024, 12, 30), new Money(100m)),
+            new PricePoint(new DateTime(2024, 12, 31), new Money(110m)),
+            new PricePoint(new DateTime(2025, 1, 1), new Money(100m))
+        ]);
+
+        using var factory = new WebApplicationFactory<Program>()
+            .WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IPortfolioRepository>();
+                services.RemoveAll<IAssetRepository>();
+                services.RemoveAll<IMarketDataReader>();
+                services.AddScoped<IPortfolioRepository>(_ => new PortfolioRepositoryStub(portfolio));
+                services.AddScoped<IAssetRepository>(_ => new AssetRepositoryStub([asset]));
+                services.AddScoped<IMarketDataReader>(_ => new MarketDataReaderStub(10m));
+            }));
+        using var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/api/portfolios/1/risk-analysis");
+
+        response.EnsureSuccessStatusCode();
+        var analysis = await response.Content.ReadFromJsonAsync<RiskAnalysisResponse>();
+        Assert.NotNull(analysis);
+        Assert.Equal(0.0656m, analysis.SharpeRatio);
     }
 
     [Theory]
@@ -96,8 +134,8 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
                     services.RemoveAll<IPortfolioRepository>();
                     services.RemoveAll<IAssetRepository>();
                     services.RemoveAll<IPortfolioPerformanceDataReader>();
-                    services.AddScoped<IPortfolioRepository, IncompletePortfolioRepository>();
-                    services.AddScoped<IAssetRepository, MissingAssetRepository>();
+                    services.AddScoped<IPortfolioRepository>(_ => new PortfolioRepositoryStub(IncompletePortfolio()));
+                    services.AddScoped<IAssetRepository>(_ => new AssetRepositoryStub([]));
                     services.AddScoped<IPortfolioPerformanceDataReader, MissingPerformanceDataReader>();
                 });
             });
@@ -146,9 +184,9 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
         public Task<Asset?> GetAssetAsync(AssetSymbol symbol, CancellationToken ct = default) => Task.FromResult<Asset?>(null);
     }
 
-    private sealed class IncompletePortfolioRepository : IPortfolioRepository
+    private sealed class PortfolioRepositoryStub(Portfolio portfolio) : IPortfolioRepository
     {
-        public Task<Portfolio?> GetWithPositionsAsync(int id, CancellationToken ct = default) => Task.FromResult(id == 1 ? IncompletePortfolio() : null);
+        public Task<Portfolio?> GetWithPositionsAsync(int id, CancellationToken ct = default) => Task.FromResult(id == portfolio.Id ? portfolio : null);
         public Task<Portfolio?> GetByIdAsync(int id, CancellationToken ct = default) => Task.FromResult<Portfolio?>(null);
         public Task<IReadOnlyList<Portfolio>> GetAllAsync(Func<IQueryable<Portfolio>, IOrderedQueryable<Portfolio>>? orderBy = null, Expression<Func<Portfolio, object>>[]? includes = null, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Portfolio>>([]);
         public Task<IReadOnlyList<Portfolio>> QueryAsync(Expression<Func<Portfolio, bool>> predicate, Func<IQueryable<Portfolio>, IOrderedQueryable<Portfolio>>? orderBy = null, Expression<Func<Portfolio, object>>[]? includes = null, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Portfolio>>([]);
@@ -160,10 +198,12 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
         public Task SaveChangesAsync(CancellationToken ct = default) => Task.CompletedTask;
     }
 
-    private sealed class MissingAssetRepository : IAssetRepository
+    private sealed class AssetRepositoryStub(IEnumerable<Asset> assets) : IAssetRepository
     {
-        public Task<Asset?> GetByIdAsync(AssetSymbol id, CancellationToken ct = default) => Task.FromResult<Asset?>(null);
-        public Task<Asset?> GetWithPriceHistoryAsync(AssetSymbol symbol, CancellationToken ct = default) => Task.FromResult<Asset?>(null);
+        private readonly IReadOnlyDictionary<AssetSymbol, Asset> _assets = assets.ToDictionary(asset => asset.Symbol);
+
+        public Task<Asset?> GetByIdAsync(AssetSymbol id, CancellationToken ct = default) => Task.FromResult(_assets.GetValueOrDefault(id));
+        public Task<Asset?> GetWithPriceHistoryAsync(AssetSymbol symbol, CancellationToken ct = default) => Task.FromResult(_assets.GetValueOrDefault(symbol));
         public Task<IReadOnlyList<Asset>> GetAllAsync(Func<IQueryable<Asset>, IOrderedQueryable<Asset>>? orderBy = null, Expression<Func<Asset, object>>[]? includes = null, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Asset>>([]);
         public Task<IReadOnlyList<Asset>> QueryAsync(Expression<Func<Asset, bool>> predicate, Func<IQueryable<Asset>, IOrderedQueryable<Asset>>? orderBy = null, Expression<Func<Asset, object>>[]? includes = null, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<Asset>>([]);
         public Task<Asset?> QuerySingleAsync(Expression<Func<Asset, bool>> predicate, Func<IQueryable<Asset>, IOrderedQueryable<Asset>>? orderBy = null, Expression<Func<Asset, object>>[]? includes = null, CancellationToken ct = default) => Task.FromResult<Asset?>(null);
@@ -171,5 +211,10 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
         public Task UpdateAsync(Asset entity, CancellationToken ct = default) => Task.CompletedTask;
         public Task DeleteAsync(AssetSymbol id, CancellationToken ct = default) => Task.CompletedTask;
         public Task SaveChangesAsync(CancellationToken ct = default) => Task.CompletedTask;
+    }
+
+    private sealed class MarketDataReaderStub(decimal? selicRate) : IMarketDataReader
+    {
+        public Task<decimal?> GetSelicRateAsync(CancellationToken ct = default) => Task.FromResult(selicRate);
     }
 }
