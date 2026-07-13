@@ -1,20 +1,16 @@
-using Abstractions._03_Infra.Persistence;
 using Models;
 
 namespace Application.Contracts;
 
-/// <summary>
-/// Provides persistence operations for portfolio aggregates.
-/// </summary>
-public interface IPortfolioRepository : IDataRepositoryBase<Portfolio, int>
+public interface IPortfolioPositionsReader
 {
-    /// <summary>
-    /// Gets a portfolio and all of its positions.
-    /// </summary>
     Task<Portfolio?> GetWithPositionsAsync(int id, CancellationToken ct = default);
+}
 
-    /// <summary>
-    /// Gets all portfolios owned by a user, including their positions.
-    /// </summary>
+public interface IPortfolioSeedRepository
+{
+    Task<IReadOnlyList<Portfolio>> GetAllAsync(CancellationToken ct = default);
     Task<IReadOnlyList<Portfolio>> GetByUserIdAsync(string userId, CancellationToken ct = default);
+    Task AddAsync(Portfolio entity, CancellationToken ct = default);
+    Task SaveChangesAsync(CancellationToken ct = default);
 }

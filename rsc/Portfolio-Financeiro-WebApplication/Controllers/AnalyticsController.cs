@@ -10,7 +10,7 @@ namespace Portfolio_Financeiro_WebApplication.Controllers;
 
 [ApiController]
 [Route("api/portfolios")]
-public sealed class AnalyticsController(ISender sender, RiskAnalysisAppService riskAnalysis, GenerateRebalancingSuggestionsUseCase rebalancing) : ControllerBase
+public sealed class AnalyticsController(ISender sender, IRiskAnalysisAppService riskAnalysis, IGenerateRebalancingSuggestionsUseCase rebalancing) : ControllerBase
 {
     [HttpGet("{id:int}/performance")]
     [ProducesResponseType<PortfolioPerformanceResponse>(StatusCodes.Status200OK)]

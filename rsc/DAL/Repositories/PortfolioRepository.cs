@@ -13,7 +13,7 @@ namespace DAL.Repositories;
 public sealed class PortfolioRepository(
     PortfolioDbContext context,
     IDomainEventDispatcher eventDispatcher)
-    : EfDataRepositoryBase<Portfolio, int>(context, eventDispatcher), IPortfolioRepository
+    : EfDataRepositoryBase<Portfolio, int>(context, eventDispatcher), IPortfolioPositionsReader, IPortfolioSeedRepository
 {
     /// <inheritdoc />
     public Task<Portfolio?> GetWithPositionsAsync(int id, CancellationToken ct = default)
@@ -35,4 +35,7 @@ public sealed class PortfolioRepository(
             .Where(portfolio => portfolio.UserId == userId)
             .ToListAsync(ct);
     }
+
+    public Task<IReadOnlyList<Portfolio>> GetAllAsync(CancellationToken ct = default) =>
+        DbSet.ToListAsync(ct).ContinueWith(task => (IReadOnlyList<Portfolio>)task.Result, ct);
 }

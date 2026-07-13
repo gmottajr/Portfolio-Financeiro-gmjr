@@ -1,6 +1,5 @@
 using System.Linq.Expressions;
 using Abstractions._02_Application.Services;
-using Abstractions._03_Infra.Persistence;
 using Abstractions._04_Domain;
 using DAL.Data;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +11,7 @@ namespace DAL.Repositories.Abstractions;
 /// </summary>
 /// <typeparam name="TEntity">The aggregate root type.</typeparam>
 /// <typeparam name="TKey">The aggregate root key type.</typeparam>
-public class EfDataRepositoryBase<TEntity, TKey> : DataRepositoryBase<TEntity, TKey>
+public class EfDataRepositoryBase<TEntity, TKey>
     where TEntity : AggregateRoot<TKey>
     where TKey : notnull
 {
@@ -30,13 +29,13 @@ public class EfDataRepositoryBase<TEntity, TKey> : DataRepositoryBase<TEntity, T
     }
 
     /// <inheritdoc />
-    public override async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken ct = default)
+    public async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken ct = default)
     {
         return await DbSet.FindAsync([id], ct);
     }
 
     /// <inheritdoc />
-    public override async Task<IReadOnlyList<TEntity>> GetAllAsync(
+    public async Task<IReadOnlyList<TEntity>> GetAllAsync(
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         Expression<Func<TEntity, object>>[]? includes = null,
         CancellationToken ct = default)
@@ -52,7 +51,7 @@ public class EfDataRepositoryBase<TEntity, TKey> : DataRepositoryBase<TEntity, T
     }
 
     /// <inheritdoc />
-    public override async Task<IReadOnlyList<TEntity>> QueryAsync(
+    public async Task<IReadOnlyList<TEntity>> QueryAsync(
         Expression<Func<TEntity, bool>> predicate,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         Expression<Func<TEntity, object>>[]? includes = null,
@@ -69,7 +68,7 @@ public class EfDataRepositoryBase<TEntity, TKey> : DataRepositoryBase<TEntity, T
     }
 
     /// <inheritdoc />
-    public override async Task<TEntity?> QuerySingleAsync(
+    public async Task<TEntity?> QuerySingleAsync(
         Expression<Func<TEntity, bool>> predicate,
         Func<IQueryable<TEntity>, IOrderedQueryable<TEntity>>? orderBy = null,
         Expression<Func<TEntity, object>>[]? includes = null,
@@ -86,20 +85,20 @@ public class EfDataRepositoryBase<TEntity, TKey> : DataRepositoryBase<TEntity, T
     }
 
     /// <inheritdoc />
-    public override async Task AddAsync(TEntity entity, CancellationToken ct = default)
+    public async Task AddAsync(TEntity entity, CancellationToken ct = default)
     {
         await DbSet.AddAsync(entity, ct);
     }
 
     /// <inheritdoc />
-    public override Task UpdateAsync(TEntity entity, CancellationToken ct = default)
+    public Task UpdateAsync(TEntity entity, CancellationToken ct = default)
     {
         DbSet.Update(entity);
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public override async Task DeleteAsync(TKey id, CancellationToken ct = default)
+    public async Task DeleteAsync(TKey id, CancellationToken ct = default)
     {
         var entity = await GetByIdAsync(id, ct);
         if (entity is not null)
@@ -109,7 +108,7 @@ public class EfDataRepositoryBase<TEntity, TKey> : DataRepositoryBase<TEntity, T
     }
 
     /// <inheritdoc />
-    public override async Task SaveChangesAsync(CancellationToken ct = default)
+    public async Task SaveChangesAsync(CancellationToken ct = default)
     {
         var aggregatesWithEvents = Context.ChangeTracker
             .Entries<EntityBase>()

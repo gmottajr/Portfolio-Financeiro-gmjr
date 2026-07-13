@@ -11,8 +11,8 @@ namespace DAL.Sower;
 /// Seeds assets and portfolios from the application's JSON seed data.
 /// </summary>
 public sealed class DataSower(
-    IAssetRepository assetRepository,
-    IPortfolioRepository portfolioRepository,
+    IAssetSeedRepository assetRepository,
+    IPortfolioSeedRepository portfolioRepository,
     PortfolioDbContext context) : IDataSower
 {
     private static readonly JsonSerializerOptions SerializerOptions = new()

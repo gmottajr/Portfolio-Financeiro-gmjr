@@ -28,9 +28,9 @@ internal sealed record SuggestedTradeResult(string Symbol, string Action, decima
 internal sealed record RebalancingResult(bool NeedsRebalancing, IReadOnlyList<CurrentAllocationResult> CurrentAllocation, IReadOnlyList<SuggestedTradeResult> SuggestedTrades, decimal TotalTransactionCost, string ExpectedImprovement);
 
 public sealed class GenerateRebalancingSuggestionsUseCase(
-    IPortfolioRepository portfolios,
-    IAssetRepository assets,
-    ILogger<GenerateRebalancingSuggestionsUseCase> logger)
+    IPortfolioPositionsReader portfolios,
+    IAssetReader assets,
+    ILogger<GenerateRebalancingSuggestionsUseCase> logger) : IGenerateRebalancingSuggestionsUseCase
 {
     private const decimal DeviationThreshold = 2m;
     private const decimal MinimumTradeValue = 100m;

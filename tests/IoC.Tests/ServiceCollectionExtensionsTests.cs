@@ -100,8 +100,9 @@ public sealed class ServiceCollectionExtensionsTests
         using var provider = services.BuildServiceProvider();
         using var scope = provider.CreateScope();
 
-        Assert.IsType<AssetRepository>(scope.ServiceProvider.GetRequiredService<IAssetRepository>());
-        Assert.IsType<PortfolioRepository>(scope.ServiceProvider.GetRequiredService<IPortfolioRepository>());
+        Assert.IsType<AssetRepository>(scope.ServiceProvider.GetRequiredService<IAssetReader>());
+        Assert.IsType<AssetRepository>(scope.ServiceProvider.GetRequiredService<IAssetPriceHistoryReader>());
+        Assert.IsType<PortfolioRepository>(scope.ServiceProvider.GetRequiredService<IPortfolioPositionsReader>());
         Assert.IsType<DataSower>(scope.ServiceProvider.GetRequiredService<IDataSower>());
     }
 

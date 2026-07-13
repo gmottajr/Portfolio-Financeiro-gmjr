@@ -12,11 +12,11 @@ public sealed record SectorDiversificationResponse(string Sector, decimal Percen
 public sealed record RiskAnalysisResponse(string OverallRisk, decimal? SharpeRatio, ConcentrationRiskResponse ConcentrationRisk, IReadOnlyList<SectorDiversificationResponse> SectorDiversification, IReadOnlyList<string> Recommendations);
 
 public sealed class RiskAnalysisAppService(
-    IPortfolioRepository portfolios,
-    IAssetRepository assets,
+    IPortfolioPositionsReader portfolios,
+    IAssetPriceHistoryReader assets,
     IMarketDataReader marketData,
     PortfolioRiskCalculator calculator,
-    ILogger<RiskAnalysisAppService> logger)
+    ILogger<RiskAnalysisAppService> logger) : IRiskAnalysisAppService
 {
     public async Task<RiskAnalysisResponse?> AnalyzeAsync(int portfolioId, CancellationToken ct = default)
     {

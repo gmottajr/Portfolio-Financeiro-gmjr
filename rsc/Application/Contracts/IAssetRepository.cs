@@ -1,16 +1,20 @@
-using Abstractions._03_Infra.Persistence;
 using Models;
 using SharedKernel.ValueObjects;
 
 namespace Application.Contracts;
 
-/// <summary>
-/// Provides persistence operations for asset aggregates.
-/// </summary>
-public interface IAssetRepository : IDataRepositoryBase<Asset, AssetSymbol>
+public interface IAssetReader
 {
-    /// <summary>
-    /// Gets an asset and its complete price history.
-    /// </summary>
+    Task<Asset?> GetByIdAsync(AssetSymbol symbol, CancellationToken ct = default);
+}
+
+public interface IAssetPriceHistoryReader
+{
     Task<Asset?> GetWithPriceHistoryAsync(AssetSymbol symbol, CancellationToken ct = default);
+}
+
+public interface IAssetSeedRepository : IAssetReader
+{
+    Task AddAsync(Asset entity, CancellationToken ct = default);
+    Task SaveChangesAsync(CancellationToken ct = default);
 }

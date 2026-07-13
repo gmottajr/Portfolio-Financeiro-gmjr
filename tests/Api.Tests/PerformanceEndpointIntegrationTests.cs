@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Linq.Expressions;
-using Abstractions._03_Infra.Persistence;
 using Application.Contracts;
 using Application.Performance;
 using Application.Risk;
@@ -90,11 +89,13 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
         using var factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder => builder.ConfigureServices(services =>
             {
-                services.RemoveAll<IPortfolioRepository>();
-                services.RemoveAll<IAssetRepository>();
+                services.RemoveAll<IPortfolioPositionsReader>();
+                services.RemoveAll<IAssetReader>();
+                services.RemoveAll<IAssetPriceHistoryReader>();
                 services.RemoveAll<IMarketDataReader>();
-                services.AddScoped<IPortfolioRepository>(_ => new PortfolioRepositoryStub(portfolio));
-                services.AddScoped<IAssetRepository>(_ => new AssetRepositoryStub([asset]));
+                services.AddScoped<IPortfolioPositionsReader>(_ => new PortfolioRepositoryStub(portfolio));
+                services.AddScoped<IAssetReader>(_ => new AssetRepositoryStub([asset]));
+                services.AddScoped<IAssetPriceHistoryReader>(_ => new AssetRepositoryStub([asset]));
                 services.AddScoped<IMarketDataReader>(_ => new MarketDataReaderStub(10m));
             }));
         using var client = factory.CreateClient();
@@ -131,11 +132,13 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
                 builder.ConfigureLogging(logging => logging.ClearProviders());
                 builder.ConfigureServices(services =>
                 {
-                    services.RemoveAll<IPortfolioRepository>();
-                    services.RemoveAll<IAssetRepository>();
+                    services.RemoveAll<IPortfolioPositionsReader>();
+                    services.RemoveAll<IAssetReader>();
+                    services.RemoveAll<IAssetPriceHistoryReader>();
                     services.RemoveAll<IPortfolioPerformanceDataReader>();
-                    services.AddScoped<IPortfolioRepository>(_ => new PortfolioRepositoryStub(IncompletePortfolio()));
-                    services.AddScoped<IAssetRepository>(_ => new AssetRepositoryStub([]));
+                    services.AddScoped<IPortfolioPositionsReader>(_ => new PortfolioRepositoryStub(IncompletePortfolio()));
+                    services.AddScoped<IAssetReader>(_ => new AssetRepositoryStub([]));
+                    services.AddScoped<IAssetPriceHistoryReader>(_ => new AssetRepositoryStub([]));
                     services.AddScoped<IPortfolioPerformanceDataReader, MissingPerformanceDataReader>();
                 });
             });
@@ -184,7 +187,7 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
         public Task<Asset?> GetAssetAsync(AssetSymbol symbol, CancellationToken ct = default) => Task.FromResult<Asset?>(null);
     }
 
-    private sealed class PortfolioRepositoryStub(Portfolio portfolio) : IPortfolioRepository
+    private sealed class PortfolioRepositoryStub(Portfolio portfolio) : IPortfolioPositionsReader
     {
         public Task<Portfolio?> GetWithPositionsAsync(int id, CancellationToken ct = default) => Task.FromResult(id == portfolio.Id ? portfolio : null);
         public Task<Portfolio?> GetByIdAsync(int id, CancellationToken ct = default) => Task.FromResult<Portfolio?>(null);
@@ -198,7 +201,7 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<WebAppli
         public Task SaveChangesAsync(CancellationToken ct = default) => Task.CompletedTask;
     }
 
-    private sealed class AssetRepositoryStub(IEnumerable<Asset> assets) : IAssetRepository
+    private sealed class AssetRepositoryStub(IEnumerable<Asset> assets) : IAssetReader, IAssetPriceHistoryReader
     {
         private readonly IReadOnlyDictionary<AssetSymbol, Asset> _assets = assets.ToDictionary(asset => asset.Symbol);
 

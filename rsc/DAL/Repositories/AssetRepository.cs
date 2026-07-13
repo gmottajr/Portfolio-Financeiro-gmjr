@@ -14,7 +14,7 @@ namespace DAL.Repositories;
 public sealed class AssetRepository(
     PortfolioDbContext context,
     IDomainEventDispatcher eventDispatcher)
-    : EfDataRepositoryBase<Asset, AssetSymbol>(context, eventDispatcher), IAssetRepository
+    : EfDataRepositoryBase<Asset, AssetSymbol>(context, eventDispatcher), IAssetReader, IAssetPriceHistoryReader, IAssetSeedRepository
 {
     /// <inheritdoc />
     public Task<Asset?> GetWithPriceHistoryAsync(AssetSymbol symbol, CancellationToken ct = default)

@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using Abstractions._03_Infra.Persistence;
 using Application.Contracts;
 using Application.Exceptions;
 using Application.Rebalancing;
@@ -165,7 +164,7 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
     private static Asset Asset(string symbol, decimal price) =>
         new(new AssetSymbol(symbol), symbol, "Stock", "Sector", new Money(price), new DateTime(2024, 1, 1));
 
-    private sealed class PortfolioRepositoryStub(Portfolio? portfolio) : IPortfolioRepository
+    private sealed class PortfolioRepositoryStub(Portfolio? portfolio) : IPortfolioPositionsReader
     {
         public Task<Portfolio?> GetWithPositionsAsync(int id, CancellationToken ct = default) => Task.FromResult(portfolio is not null && id == portfolio.Id ? portfolio : null);
         public Task<Portfolio?> GetByIdAsync(int id, CancellationToken ct = default) => throw new NotSupportedException();
@@ -179,7 +178,7 @@ public sealed class GenerateRebalancingSuggestionsUseCaseTests
         public Task SaveChangesAsync(CancellationToken ct = default) => throw new NotSupportedException();
     }
 
-    private sealed class AssetRepositoryStub(IEnumerable<Asset> assets) : IAssetRepository
+    private sealed class AssetRepositoryStub(IEnumerable<Asset> assets) : IAssetReader
     {
         private readonly IReadOnlyDictionary<AssetSymbol, Asset> _assets = assets.ToDictionary(asset => asset.Symbol);
 

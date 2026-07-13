@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using Abstractions._03_Infra.Persistence;
 using Application.Contracts;
 using Application.Exceptions;
 using Application.Risk;
@@ -224,7 +223,7 @@ public sealed class RiskAnalysisAppServiceTests
         public Task<decimal?> GetSelicRateAsync(CancellationToken ct = default) => Task.FromResult(selicRate);
     }
 
-    private sealed class PortfolioRepositoryStub(Portfolio? portfolio) : IPortfolioRepository
+    private sealed class PortfolioRepositoryStub(Portfolio? portfolio) : IPortfolioPositionsReader
     {
         public Task<Portfolio?> GetWithPositionsAsync(int id, CancellationToken ct = default) =>
             Task.FromResult(portfolio is not null && id == portfolio.Id ? portfolio : null);
@@ -240,7 +239,7 @@ public sealed class RiskAnalysisAppServiceTests
         public Task SaveChangesAsync(CancellationToken ct = default) => throw new NotSupportedException();
     }
 
-    private sealed class AssetRepositoryStub(IEnumerable<Asset> assets) : IAssetRepository
+    private sealed class AssetRepositoryStub(IEnumerable<Asset> assets) : IAssetPriceHistoryReader
     {
         private readonly IReadOnlyDictionary<AssetSymbol, Asset> _assets = assets.ToDictionary(asset => asset.Symbol);
 

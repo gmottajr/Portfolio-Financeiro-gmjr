@@ -7,8 +7,8 @@ namespace DAL.Queries;
 
 /// <summary>EF Core implementation of the read gateway used by performance analysis.</summary>
 public sealed class PortfolioPerformanceDataReader(
-    IPortfolioRepository portfolioRepository,
-    IAssetRepository assetRepository) : IPortfolioPerformanceDataReader
+    IPortfolioPositionsReader portfolioRepository,
+    IAssetPriceHistoryReader assetRepository) : IPortfolioPerformanceDataReader
 {
     public Task<Portfolio?> GetPortfolioAsync(int portfolioId, CancellationToken ct = default) =>
         portfolioRepository.GetWithPositionsAsync(portfolioId, ct);

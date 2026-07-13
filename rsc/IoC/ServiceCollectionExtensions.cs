@@ -75,8 +75,13 @@ public static class ServiceCollectionExtensions
     /// </summary>
     public static IServiceCollection AddPortfolioRepositories(this IServiceCollection services)
     {
-        services.AddScoped<IAssetRepository, AssetRepository>();
-        services.AddScoped<IPortfolioRepository, PortfolioRepository>();
+        services.AddScoped<AssetRepository>();
+        services.AddScoped<IAssetReader>(provider => provider.GetRequiredService<AssetRepository>());
+        services.AddScoped<IAssetPriceHistoryReader>(provider => provider.GetRequiredService<AssetRepository>());
+        services.AddScoped<IAssetSeedRepository>(provider => provider.GetRequiredService<AssetRepository>());
+        services.AddScoped<PortfolioRepository>();
+        services.AddScoped<IPortfolioPositionsReader>(provider => provider.GetRequiredService<PortfolioRepository>());
+        services.AddScoped<IPortfolioSeedRepository>(provider => provider.GetRequiredService<PortfolioRepository>());
         services.AddScoped<IPortfolioPerformanceDataReader, PortfolioPerformanceDataReader>();
         services.AddScoped<IMarketDataReader, MarketDataReader>();
 
@@ -100,7 +105,9 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPerformanceCalculator, PerformanceCalculator>();
         services.AddScoped<PortfolioRiskCalculator>();
         services.AddScoped<RiskAnalysisAppService>();
+        services.AddScoped<IRiskAnalysisAppService>(provider => provider.GetRequiredService<RiskAnalysisAppService>());
         services.AddScoped<GenerateRebalancingSuggestionsUseCase>();
+        services.AddScoped<IGenerateRebalancingSuggestionsUseCase>(provider => provider.GetRequiredService<GenerateRebalancingSuggestionsUseCase>());
 
         return services;
     }
