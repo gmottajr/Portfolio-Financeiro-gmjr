@@ -65,7 +65,7 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
         Assert.NotNull(performance);
         Assert.Equal(100_000m, performance.TotalInvestment);
         Assert.Equal(5, performance.PositionsPerformance.Count);
-        Assert.Null(performance.Volatility);
+        Assert.NotNull(performance.Volatility);
     }
 
     [Fact]
@@ -118,10 +118,25 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
         response.EnsureSuccessStatusCode();
         var analysis = await response.Content.ReadFromJsonAsync<RiskAnalysisResponse>();
         Assert.NotNull(analysis);
-        Assert.Null(analysis.SharpeRatio);
+        Assert.NotNull(analysis.SharpeRatio);
         Assert.NotNull(analysis.ConcentrationRisk.LargestPosition);
         Assert.NotEmpty(analysis.SectorDiversification);
         Assert.NotNull(analysis.Recommendations);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public async Task SeededPortfolios_ReturnVolatilityAndSharpeRatio(int portfolioId)
+    {
+        var performance = await _client.GetFromJsonAsync<PortfolioPerformanceResponse>(
+            $"/api/portfolios/{portfolioId}/performance");
+        var risk = await _client.GetFromJsonAsync<RiskAnalysisResponse>(
+            $"/api/portfolios/{portfolioId}/risk-analysis");
+
+        Assert.NotNull(performance?.Volatility);
+        Assert.NotNull(risk?.SharpeRatio);
     }
 
     [Fact]

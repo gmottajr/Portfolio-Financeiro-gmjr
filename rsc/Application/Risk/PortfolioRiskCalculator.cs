@@ -8,7 +8,7 @@ public sealed record ConcentrationRiskResult(LargestPositionRiskResult? LargestP
 public sealed record SectorDiversificationResult(string Sector, decimal Percentage, string Risk);
 public sealed record RiskAnalysisResult(string OverallRisk, decimal? SharpeRatio, ConcentrationRiskResult ConcentrationRisk, IReadOnlyList<SectorDiversificationResult> SectorDiversification, IReadOnlyList<string> Recommendations);
 public sealed record RiskPositionValue(string Symbol, Asset Asset, decimal Value);
-public sealed record RiskPositionHistory(decimal Weight, IReadOnlyDictionary<DateTime, decimal> DailyReturns);
+public sealed record RiskPositionHistory(decimal MarketValue, IReadOnlyDictionary<DateTime, decimal> DailyReturns);
 
 /// <summary>Pure calculation and policy logic for a portfolio risk analysis.</summary>
 public sealed class PortfolioRiskCalculator
@@ -54,10 +54,55 @@ public sealed class PortfolioRiskCalculator
         if (totalValue <= 0m || positions.Count == 0) return null;
         // r[i,t] = (close[i,t] - close[i,t-1]) / close[i,t-1]; portfolio
         // r[p,t] = Σ(weight[i] × r[i,t]); annual volatility = σ[daily] × √252 × 100.
-        var histories = positions.Select(position => { var points = position.Asset.PriceHistory.GroupBy(point => point.Date.Date).Select(group => group.OrderBy(point => point.Date).Last()).OrderBy(point => point.Date).ToList(); if (points.Count < 2) return null; var dailyReturns = points.Zip(points.Skip(1), (previous, current) => new { current.Date, Return = previous.Price.Value == 0m ? (decimal?)null : (current.Price.Value - previous.Price.Value) / previous.Price.Value }).Where(item => item.Return.HasValue).ToDictionary(item => item.Date.Date, item => item.Return!.Value); return dailyReturns.Count == 0 ? null : new RiskPositionHistory(position.Value / totalValue, dailyReturns); }).ToList();
-        if (histories.Any(history => history is null)) return null;
-        var complete = histories.Select(history => history!).ToList(); var dates = complete.Select(history => history.DailyReturns.Keys).Aggregate((dates, next) => dates.Intersect(next).ToList()); if (!dates.Any()) return null;
-        var returns = dates.Select(date => complete.Sum(history => history.Weight * history.DailyReturns[date])).ToList(); var average = returns.Average(); var variance = returns.Average(value => (value - average) * (value - average)); return decimal.Round((decimal)Math.Sqrt((double)variance) * (decimal)Math.Sqrt(252d) * 100m, 4);
+        var histories = positions
+            .Select(position =>
+            {
+                var points = position.Asset.PriceHistory
+                    .GroupBy(point => point.Date.Date)
+                    .Select(group => group.OrderBy(point => point.Date).Last())
+                    .OrderBy(point => point.Date)
+                    .ToList();
+                if (points.Count < 2) return null;
+
+                var dailyReturns = points
+                    .Zip(points.Skip(1), (previous, current) => new
+                    {
+                        current.Date,
+                        Return = previous.Price.Value == 0m
+                            ? (decimal?)null
+                            : (current.Price.Value - previous.Price.Value) / previous.Price.Value
+                    })
+                    .Where(item => item.Return.HasValue)
+                    .ToDictionary(item => item.Date.Date, item => item.Return!.Value);
+
+                return dailyReturns.Count == 0
+                    ? null
+                    : new RiskPositionHistory(position.Value, dailyReturns);
+            })
+            .Where(history => history is not null)
+            .Select(history => history!)
+            .ToList();
+        if (histories.Count == 0) return null;
+
+        // Partial history uses only covered positions. Reweight their market
+        // values so the effective portfolio weights still sum to 100%.
+        var coveredValue = histories.Sum(history => history.MarketValue);
+        if (coveredValue <= 0m) return null;
+
+        var dates = histories
+            .Select(history => history.DailyReturns.Keys)
+            .Aggregate((current, next) => current.Intersect(next).ToList());
+        if (!dates.Any()) return null;
+
+        var returns = dates
+            .Select(date => histories.Sum(history =>
+                history.MarketValue / coveredValue * history.DailyReturns[date]))
+            .ToList();
+        var average = returns.Average();
+        var variance = returns.Average(value => (value - average) * (value - average));
+        return decimal.Round(
+            (decimal)Math.Sqrt((double)variance) * (decimal)Math.Sqrt(252d) * 100m,
+            4);
     }
     private static string CalculateOverallRisk(decimal largestPosition, IReadOnlyList<SectorDiversificationResult> sectors) { var largestSector = sectors.Count == 0 ? 0m : sectors.Max(sector => sector.Percentage); return largestPosition > 25m || largestSector > 40m ? "High" : largestPosition >= 15m || largestSector >= 25m ? "Medium" : "Low"; }
     private static string CalculateSectorRisk(decimal percentage) => percentage > 40m ? "High" : percentage >= 25m ? "Medium" : "Low";

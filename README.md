@@ -81,8 +81,8 @@ Os projetos `Api.Tests` e `Persistence.Tests` copiam esse mesmo arquivo ao build
 - **Retorno anualizado:** `((1 + retorno total / 100)^(365 / dias decorridos) - 1) × 100`.
 - **Peso da posição:** `(valor de mercado da posição / valor de mercado total) × 100`.
 - **Retorno diário:** `(fechamento[t] - fechamento[t-1]) / fechamento[t-1]`.
-- **Volatilidade de performance:** desvio-padrão populacional dos retornos diários ponderados; é retornada em base diária.
-- **Volatilidade usada no Sharpe:** volatilidade diária anualizada por `√252`.
+- **Volatilidade de performance:** desvio-padrão populacional dos retornos diários ponderados; é retornada em base diária. Quando apenas parte das posições possui histórico utilizável, seus valores de mercado são renormalizados para que os pesos cobertos somem 100%.
+- **Volatilidade usada no Sharpe:** a mesma série diária coberta, anualizada por `√252`.
 - **Sharpe Ratio:** `(retorno anualizado - Selic anual) / volatilidade anualizada`. O retorno anualizado usa `Portfolio.TotalInvestment`, a mesma base do endpoint de performance, e não é reconstruído pela soma dos custos das posições.
 - **Custo de transação:** `valor negociado × 0,3%`, arredondado comercialmente para centavos.
 - **Rebalanceamento:** o valor-alvo é `valor pós-custos × peso-alvo`; o plano resolve `valor pós-custos + custos = valor atual`, para que vendas líquidas financiem compras e taxas. A quantidade é `valor negociado / preço atual`.
@@ -92,7 +92,7 @@ Os projetos `Api.Tests` e `Persistence.Tests` copiam esse mesmo arquivo ao build
 - Cada `TargetAllocation` deve estar entre 0% e 100%; carteiras com posições devem somar 100%, com tolerância de 0,0001%. Violações lançam `BusinessViolationException`.
 - O otimizador normaliza targets como proteção adicional para dados externos/legados, mas a entidade `Portfolio` rejeita esse estado na criação ou alteração normal.
 - Uma cotação duplicada no mesmo dia é consolidada pela cotação mais recente, que passa a ser o fechamento diário.
-- Sem histórico suficiente, histórico parcial, divisão por zero, preço atual zero ou datas inválidas: a métrica que não pode ser calculada retorna `null` ou não gera trade, conforme o endpoint.
+- Sem qualquer histórico suficiente, sem datas comuns entre os históricos disponíveis, divisão por zero, preço atual zero ou datas inválidas: a métrica que não pode ser calculada retorna `null` ou não gera trade, conforme o endpoint. Histórico parcial é calculado sobre as posições cobertas, com pesos renormalizados.
 - Trades só são sugeridos para desvios maiores que 2 pontos percentuais e valores de pelo menos R$100. Operações são ordenadas pelo maior desvio e o plano evita aporte externo.
 - Alocações/ativos ausentes para uma carteira conhecida são tratados como dados incompletos (`422`).
 

@@ -112,7 +112,7 @@ public sealed class PerformanceCalculator : IPerformanceCalculator
             return null;
         }
 
-        var positionHistories = portfolio.Positions
+        var histories = portfolio.Positions
             .Select(position =>
             {
                 var asset = assets[position.AssetSymbol];
@@ -143,20 +143,26 @@ public sealed class PerformanceCalculator : IPerformanceCalculator
                 return dailyReturns.Count == 0
                     ? null
                     : new PositionHistory(
-                        position.CurrentValue(asset.CurrentPrice).Value / totalCurrentValue,
+                        position.CurrentValue(asset.CurrentPrice).Value,
                         dailyReturns);
             })
+            .Where(history => history is not null)
+            .Select(history => history!)
             .ToList();
 
-        // The README requires null when price history is unavailable. A partial
-        // history would otherwise turn this into the volatility of only a subset
-        // of the portfolio.
-        if (positionHistories.Any(history => history is null))
+        if (histories.Count == 0)
         {
             return null;
         }
 
-        var histories = positionHistories.Select(history => history!).ToList();
+        // Partial history is calculated from the covered positions. Normalize
+        // their market values so the effective weights still sum to 100%.
+        var coveredCurrentValue = histories.Sum(history => history.MarketValue);
+        if (coveredCurrentValue <= 0m)
+        {
+            return null;
+        }
+
         var commonDates = histories
             .Select(history => history.DailyReturns.Keys)
             .Aggregate((dates, next) => dates.Intersect(next).ToList());
@@ -167,7 +173,8 @@ public sealed class PerformanceCalculator : IPerformanceCalculator
 
         // Portfolio daily return r[p,t] = Σ(weight[i] × r[i,t]).
         var portfolioDailyReturns = commonDates
-            .Select(date => histories.Sum(history => history.Weight * history.DailyReturns[date]))
+            .Select(date => histories.Sum(history =>
+                history.MarketValue / coveredCurrentValue * history.DailyReturns[date]))
             .ToList();
         var average = portfolioDailyReturns.Average();
         // Daily volatility (%) = √(mean((r[p,t] - mean(r[p]))²)) × 100.
@@ -176,5 +183,5 @@ public sealed class PerformanceCalculator : IPerformanceCalculator
         return decimal.Round((decimal)Math.Sqrt((double)variance) * 100m, 4);
     }
 
-    private sealed record PositionHistory(decimal Weight, IReadOnlyDictionary<DateTime, decimal> DailyReturns);
+    private sealed record PositionHistory(decimal MarketValue, IReadOnlyDictionary<DateTime, decimal> DailyReturns);
 }

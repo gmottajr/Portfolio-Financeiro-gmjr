@@ -58,7 +58,7 @@ public sealed class PerformanceCalculatorTests
     }
 
     [Fact]
-    public void Calculate_UsesPortfolioTotalInvestmentAndRejectsPartialPriceHistory()
+    public void Calculate_UsesPortfolioTotalInvestmentAndAvailablePartialPriceHistory()
     {
         var petr4 = new Position(new AssetSymbol("PETR4"), new Quantity(10), new Money(10), new Percentage(50));
         var vale3 = new Position(new AssetSymbol("VALE3"), new Quantity(10), new Money(10), new Percentage(50));
@@ -66,17 +66,22 @@ public sealed class PerformanceCalculatorTests
         portfolio.AssignId(1);
         var assets = new Dictionary<AssetSymbol, Asset>
         {
-            [petr4.AssetSymbol] = AssetWith(petr4.AssetSymbol, 12m, [new(new DateTime(2024, 1, 1), new Money(10)), new(new DateTime(2024, 1, 2), new Money(11))]),
+            [petr4.AssetSymbol] = AssetWith(petr4.AssetSymbol, 12m,
+            [
+                new(new DateTime(2024, 1, 1), new Money(10)),
+                new(new DateTime(2024, 1, 2), new Money(11)),
+                new(new DateTime(2024, 1, 3), new Money(10))
+            ]),
             [vale3.AssetSymbol] = AssetWith(vale3.AssetSymbol, 12m, [])
         };
 
-        var result = _calculator.Calculate(portfolio, assets, new DateTime(2024, 1, 2));
+        var result = _calculator.Calculate(portfolio, assets, new DateTime(2024, 1, 3));
 
         Assert.Equal(1_000m, result.TotalInvestment);
         Assert.Equal(240m, result.CurrentValue);
         Assert.Equal(-76m, result.TotalReturn);
         Assert.Equal(-760m, result.TotalReturnAmount);
-        Assert.Null(result.Volatility);
+        Assert.Equal(9.5455m, result.Volatility);
     }
 
     [Fact]

@@ -64,9 +64,9 @@ public sealed class PortfolioRiskCalculatorTests
     }
 
     [Fact]
-    public void Calculate_WhenAnyPositionLacksHistory_ReturnsNoSharpeRatio()
+    public void Calculate_WithPartialPriceHistory_NormalizesCoveredPositionsForSharpeRatio()
     {
-        var withHistory = Position("PETR4", "Energy", 100m, [100m, 110m]);
+        var withHistory = Position("PETR4", "Energy", 100m, [100m, 110m, 100m]);
         var withoutHistory = Position("VALE3", "Mining", 100m);
 
         var result = _calculator.Calculate(
@@ -75,7 +75,7 @@ public sealed class PortfolioRiskCalculatorTests
             new DateTime(2024, 1, 1),
             10m);
 
-        Assert.Null(result.SharpeRatio);
+        Assert.Equal(-0.0660m, result.SharpeRatio);
     }
 
     private static RiskPositionValue Position(string symbol, string sector, decimal value, IEnumerable<decimal>? history = null)
