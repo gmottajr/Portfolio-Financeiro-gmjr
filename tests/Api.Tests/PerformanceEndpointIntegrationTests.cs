@@ -13,8 +13,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Any;
+using Microsoft.OpenApi.Models;
 using Models;
 using SharedKernel.ValueObjects;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace Api.Tests;
 
@@ -66,6 +69,24 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
         Assert.Equal(100_000m, performance.TotalInvestment);
         Assert.Equal(5, performance.PositionsPerformance.Count);
         Assert.NotNull(performance.Volatility);
+    }
+
+    [Fact]
+    public void OpenApi_PerformanceSuccessResponseContainsSchemaAndRepresentativeExample()
+    {
+        var swagger = _factory.Services
+            .GetRequiredService<ISwaggerProvider>()
+            .GetSwagger("v1");
+        var operation = swagger.Paths["/api/portfolios/{id}/performance"]
+            .Operations[OperationType.Get];
+        var jsonResponse = operation.Responses["200"].Content["application/json"];
+
+        Assert.Equal("PortfolioPerformanceResponse", jsonResponse.Schema.Reference.Id);
+
+        var example = Assert.IsType<OpenApiObject>(jsonResponse.Example);
+        Assert.Equal(100_000d, Assert.IsType<OpenApiDouble>(example["totalInvestment"]).Value);
+        Assert.Equal(-19.06d, Assert.IsType<OpenApiDouble>(example["totalReturn"]).Value);
+        Assert.Equal(5, Assert.IsType<OpenApiArray>(example["positionsPerformance"]).Count);
     }
 
     [Fact]

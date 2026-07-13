@@ -18,10 +18,10 @@ namespace Models;
 public sealed class Asset : AggregateRoot<AssetSymbol>
 {
     public AssetSymbol Symbol => Id;
-    public string Name { get; }
-    public string Type { get; }
-    public string Sector { get; }
-    public Money CurrentPrice { get; private set; }
+    public string Name { get; } = null!;
+    public string Type { get; } = null!;
+    public string Sector { get; } = null!;
+    public Money CurrentPrice { get; private set; } = null!;
 
     /// <summary>
     /// Reaproveita o UpdatedAt herdado de AuditableEntity em vez de um
@@ -34,12 +34,7 @@ public sealed class Asset : AggregateRoot<AssetSymbol>
     public IReadOnlyList<PricePoint> PriceHistory => _priceHistory.AsReadOnly();
 
     // Necessário para materialização pelo Entity Framework Core.
-    private Asset()
-    {
-        Name = null!;
-        Type = null!;
-        Sector = null!;
-    }
+    private Asset() { }
 
     public Asset(AssetSymbol symbol, string name, string type, string sector, Money currentPrice, DateTime lastUpdated)
     {

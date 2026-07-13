@@ -20,6 +20,8 @@ public abstract class AggregateRoot<TKey>: AuditableEntity
 
     public override int GetHashCode()
     {
-        return EqualityComparer<TKey>.Default.GetHashCode(Id);
+        return Id is null
+            ? 0
+            : EqualityComparer<TKey>.Default.GetHashCode(Id);
     }
 }

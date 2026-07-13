@@ -18,8 +18,21 @@ public sealed class AggregateRootTests
         Assert.False(first.Equals("10"));
     }
 
+    [Fact]
+    public void GetHashCode_ReturnsZeroForNullKey()
+    {
+        var aggregate = new NullableKeyAggregate(null);
+
+        Assert.Equal(0, aggregate.GetHashCode());
+    }
+
     private sealed class TestAggregate : AggregateRoot<int>
     {
         public TestAggregate(int id) => Id = id;
+    }
+
+    private sealed class NullableKeyAggregate : AggregateRoot<string>
+    {
+        public NullableKeyAggregate(string? id) => Id = id!;
     }
 }

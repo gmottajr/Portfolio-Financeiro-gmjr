@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using DAL.Sower;
 using IoC;
 using Microsoft.AspNetCore.RateLimiting;
+using Portfolio_Financeiro_WebApplication.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +34,11 @@ builder.Services.AddRateLimiter(options =>
 });
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SupportNonNullableReferenceTypes();
+    options.OperationFilter<PerformanceResponseExampleOperationFilter>();
+});
 
 var app = builder.Build();
 

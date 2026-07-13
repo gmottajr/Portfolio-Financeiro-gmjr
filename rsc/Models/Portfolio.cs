@@ -16,9 +16,9 @@ namespace Models;
 /// </summary>
 public sealed class Portfolio : AggregateRoot<int>
 {
-    public string Name { get; }
-    public string UserId { get; }
-    public Money TotalInvestment { get; }
+    public string Name { get; } = null!;
+    public string UserId { get; } = null!;
+    public Money TotalInvestment { get; } = null!;
 
     /// <summary>
     /// Data de criação de NEGÓCIO do portfólio (vem do seed). Não usa o
@@ -34,11 +34,7 @@ public sealed class Portfolio : AggregateRoot<int>
     public IReadOnlyList<Position> Positions => _positions.AsReadOnly();
 
     // Necessário para materialização pelo Entity Framework Core.
-    private Portfolio()
-    {
-        Name = null!;
-        UserId = null!;
-    }
+    private Portfolio() { }
 
     public Portfolio(string name, string userId, Money totalInvestment, DateTime? portfolioCreatedAt, IEnumerable<Position> positions)
     {

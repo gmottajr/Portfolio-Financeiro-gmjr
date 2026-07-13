@@ -19,10 +19,10 @@ namespace Models;
 /// </summary>
 public sealed class Position : AuditableEntity
 {
-    public AssetSymbol AssetSymbol { get; }
-    public Quantity Quantity { get; private set; }
-    public Money AveragePrice { get; private set; }
-    public Percentage TargetAllocation { get; private set; }
+    public AssetSymbol AssetSymbol { get; } = null!;
+    public Quantity Quantity { get; private set; } = null!;
+    public Money AveragePrice { get; private set; } = null!;
+    public Percentage TargetAllocation { get; private set; } = null!;
     public DateTime? LastTransaction { get; private set; }
 
     // Necessário para materialização pelo Entity Framework Core.

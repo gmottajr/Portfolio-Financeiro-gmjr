@@ -112,13 +112,13 @@ A categoria `Application` está configurada em nível `Debug` no único `appsett
 
 ### Estado da entrega
 
-- AnalyticsController com três endpoints funcionais, Swagger e testes de integração.
+- AnalyticsController com três endpoints funcionais, Swagger com schema e exemplo completo da resposta de performance, e testes de integração.
 - Seed automático via `IDataSower` na inicialização.
 - Algoritmos financeiros, validações, tratamento de dados faltantes e logs estruturados.
 - Três estratégias de rebalanceamento comparáveis, endpoint idempotente e rate limit por IP.
 - Testes unitários e de integração para cálculos, regras de negócio, persistência e API.
 
-Na última validação local, passaram 44 testes de `Application.Tests`, 14 de `Persistence.Tests`, 24 de `Api.Tests` e 216 testes na solução completa.
+Na última validação local, passaram 45 testes de `Application.Tests`, 14 de `Persistence.Tests`, 25 de `Api.Tests` e 219 testes na solução completa. O build completo termina com zero erros e zero warnings.
 
 ---
 
