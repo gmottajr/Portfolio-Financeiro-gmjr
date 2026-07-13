@@ -37,7 +37,11 @@ public sealed class AnalyticsController(ISender sender, RiskAnalysisAppService r
     }
 
     [HttpGet("{id:int}/risk-analysis")]
-    public async Task<IActionResult> GetRiskAnalysis(int id, CancellationToken ct)
+    [ProducesResponseType<RiskAnalysisResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<RiskAnalysisResponse>> GetRiskAnalysis(int id, CancellationToken ct)
     {
         if (id <= 0) return BadRequest();
 
@@ -52,7 +56,11 @@ public sealed class AnalyticsController(ISender sender, RiskAnalysisAppService r
     }
 
     [HttpGet("{id:int}/rebalancing")]
-    public async Task<IActionResult> GetRebalancing(int id, CancellationToken ct)
+    [ProducesResponseType<RebalancingResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
+    public async Task<ActionResult<RebalancingResponse>> GetRebalancing(int id, CancellationToken ct)
     {
         if (id <= 0) return BadRequest();
 

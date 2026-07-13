@@ -1,5 +1,6 @@
 using Application.Contracts;
 using Application.Exceptions;
+using Application.Mappings;
 using System.Globalization;
 using Microsoft.Extensions.Logging;
 using Models;
@@ -20,6 +21,11 @@ public sealed record RiskAnalysisResponse(
     ConcentrationRiskResponse ConcentrationRisk,
     IReadOnlyList<SectorDiversificationResponse> SectorDiversification,
     IReadOnlyList<string> Recommendations);
+
+internal sealed record LargestPositionRiskResult(string Symbol, decimal Percentage);
+internal sealed record ConcentrationRiskResult(LargestPositionRiskResult? LargestPosition, decimal Top3Concentration);
+internal sealed record SectorDiversificationResult(string Sector, decimal Percentage, string Risk);
+internal sealed record RiskAnalysisResult(string OverallRisk, decimal? SharpeRatio, ConcentrationRiskResult ConcentrationRisk, IReadOnlyList<SectorDiversificationResult> SectorDiversification, IReadOnlyList<string> Recommendations);
 
 public sealed class RiskAnalysisAppService(
     IPortfolioRepository portfolios,
@@ -57,7 +63,8 @@ public sealed class RiskAnalysisAppService(
                 overallRisk,
                 sharpeRatio);
 
-            return new RiskAnalysisResponse(overallRisk, sharpeRatio, concentration, sectors, recommendations);
+            return AnalyticsResponseMapper.ToResponse(
+                new RiskAnalysisResult(overallRisk, sharpeRatio, concentration, sectors, recommendations));
         }
         catch (Exception exception)
         {
@@ -79,19 +86,19 @@ public sealed class RiskAnalysisAppService(
         return positions;
     }
 
-    private static ConcentrationRiskResponse CalculateConcentration(IReadOnlyList<PositionValue> positions, decimal totalValue)
+    private static ConcentrationRiskResult CalculateConcentration(IReadOnlyList<PositionValue> positions, decimal totalValue)
     {
         var ordered = positions.OrderByDescending(position => position.Value).ToList();
         var largest = ordered.FirstOrDefault();
         var largestPosition = largest is null
             ? null
-            : new LargestPositionRisk(largest.Symbol, CalculatePercentage(largest.Value, totalValue));
+            : new LargestPositionRiskResult(largest.Symbol, CalculatePercentage(largest.Value, totalValue));
         var top3 = ordered.Take(3).Sum(position => CalculatePercentage(position.Value, totalValue));
 
-        return new ConcentrationRiskResponse(largestPosition, decimal.Round(top3, 4));
+        return new ConcentrationRiskResult(largestPosition, decimal.Round(top3, 4));
     }
 
-    private static IReadOnlyList<SectorDiversificationResponse> CalculateSectors(
+    private static IReadOnlyList<SectorDiversificationResult> CalculateSectors(
         IReadOnlyList<PositionValue> positions,
         decimal totalValue) =>
         positions
@@ -99,7 +106,7 @@ public sealed class RiskAnalysisAppService(
             .Select(group =>
             {
                 var percentage = CalculatePercentage(group.Sum(position => position.Value), totalValue);
-                return new SectorDiversificationResponse(group.Key, percentage, CalculateSectorRisk(percentage));
+                return new SectorDiversificationResult(group.Key, percentage, CalculateSectorRisk(percentage));
             })
             .OrderByDescending(sector => sector.Percentage)
             .ThenBy(sector => sector.Sector)
@@ -138,7 +145,7 @@ public sealed class RiskAnalysisAppService(
         return decimal.Round((decimal)Math.Sqrt((double)variance) * 100m, 4);
     }
 
-    private static string CalculateOverallRisk(decimal largestPosition, IReadOnlyList<SectorDiversificationResponse> sectors)
+    private static string CalculateOverallRisk(decimal largestPosition, IReadOnlyList<SectorDiversificationResult> sectors)
     {
         var largestSector = sectors.Count == 0 ? 0m : sectors.Max(sector => sector.Percentage);
         return largestPosition > 25m || largestSector > 40m
@@ -151,8 +158,8 @@ public sealed class RiskAnalysisAppService(
     private static string CalculateSectorRisk(decimal percentage) => percentage > 40m ? "High" : percentage >= 25m ? "Medium" : "Low";
 
     private static IReadOnlyList<string> BuildRecommendations(
-        ConcentrationRiskResponse concentration,
-        IReadOnlyList<SectorDiversificationResponse> sectors)
+        ConcentrationRiskResult concentration,
+        IReadOnlyList<SectorDiversificationResult> sectors)
     {
         var recommendations = new List<string>();
         foreach (var sector in sectors.Where(sector => sector.Percentage >= 25m))

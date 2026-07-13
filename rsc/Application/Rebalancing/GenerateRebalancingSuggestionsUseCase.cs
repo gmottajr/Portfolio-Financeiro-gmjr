@@ -1,6 +1,7 @@
 using System.Globalization;
 using Application.Contracts;
 using Application.Exceptions;
+using Application.Mappings;
 using Microsoft.Extensions.Logging;
 
 namespace Application.Rebalancing;
@@ -21,6 +22,10 @@ public sealed record RebalancingResponse(
     IReadOnlyList<SuggestedTrade> SuggestedTrades,
     decimal TotalTransactionCost,
     string ExpectedImprovement);
+
+internal sealed record CurrentAllocationResult(string Symbol, decimal CurrentWeight, decimal TargetWeight, decimal Deviation);
+internal sealed record SuggestedTradeResult(string Symbol, string Action, decimal Quantity, decimal EstimatedValue, decimal TransactionCost, string Reason);
+internal sealed record RebalancingResult(bool NeedsRebalancing, IReadOnlyList<CurrentAllocationResult> CurrentAllocation, IReadOnlyList<SuggestedTradeResult> SuggestedTrades, decimal TotalTransactionCost, string ExpectedImprovement);
 
 public sealed class GenerateRebalancingSuggestionsUseCase(
     IPortfolioRepository portfolios,
@@ -55,7 +60,7 @@ public sealed class GenerateRebalancingSuggestionsUseCase(
                     position.TargetWeight))
                 .ToList();
             var currentAllocation = allocations
-                .Select(allocation => new CurrentAllocation(
+                .Select(allocation => new CurrentAllocationResult(
                     allocation.Symbol,
                     allocation.CurrentWeight,
                     allocation.TargetWeight,
@@ -73,12 +78,12 @@ public sealed class GenerateRebalancingSuggestionsUseCase(
                 portfolioId,
                 totalTransactionCost);
 
-            return new RebalancingResponse(
+            return AnalyticsResponseMapper.ToResponse(new RebalancingResult(
                 trades.Count > 0,
                 currentAllocation,
                 trades,
                 totalTransactionCost,
-                expectedImprovement);
+                expectedImprovement));
         }
         catch (Exception exception)
         {
@@ -104,14 +109,14 @@ public sealed class GenerateRebalancingSuggestionsUseCase(
         return result;
     }
 
-    private IReadOnlyList<SuggestedTrade> BuildTrades(IReadOnlyList<AllocationRow> allocations, decimal totalValue)
+    private IReadOnlyList<SuggestedTradeResult> BuildTrades(IReadOnlyList<AllocationRow> allocations, decimal totalValue)
     {
         if (totalValue <= 0m)
         {
             return [];
         }
 
-        var trades = new List<SuggestedTrade>();
+        var trades = new List<SuggestedTradeResult>();
         foreach (var allocation in allocations
                      .Where(allocation => Math.Abs(allocation.CurrentWeight - allocation.TargetWeight) > DeviationThreshold)
                      .OrderByDescending(allocation => Math.Abs(allocation.CurrentWeight - allocation.TargetWeight))
@@ -144,7 +149,7 @@ public sealed class GenerateRebalancingSuggestionsUseCase(
                 estimatedValue * TransactionCostRate,
                 2,
                 MidpointRounding.AwayFromZero);
-            trades.Add(new SuggestedTrade(
+            trades.Add(new SuggestedTradeResult(
                 allocation.Symbol,
                 action,
                 quantity,
@@ -158,7 +163,7 @@ public sealed class GenerateRebalancingSuggestionsUseCase(
 
     private static string BuildExpectedImprovement(
         IReadOnlyList<AllocationRow> allocations,
-        IReadOnlyList<SuggestedTrade> trades,
+        IReadOnlyList<SuggestedTradeResult> trades,
         decimal totalValue)
     {
         if (trades.Count == 0 || totalValue <= 0m)

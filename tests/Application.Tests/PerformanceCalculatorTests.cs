@@ -39,6 +39,27 @@ public sealed class PerformanceCalculatorTests
     }
 
     [Fact]
+    public void Calculate_UsesPositionInvestmentAndRejectsPartialPriceHistory()
+    {
+        var petr4 = new Position(new AssetSymbol("PETR4"), new Quantity(10), new Money(10), new Percentage(50));
+        var vale3 = new Position(new AssetSymbol("VALE3"), new Quantity(10), new Money(10), new Percentage(50));
+        var portfolio = new Portfolio("Test", "user", new Money(1_000m), new DateTime(2024, 1, 1), [petr4, vale3]);
+        portfolio.AssignId(1);
+        var assets = new Dictionary<AssetSymbol, Asset>
+        {
+            [petr4.AssetSymbol] = AssetWith(petr4.AssetSymbol, 12m, [new(new DateTime(2024, 1, 1), new Money(10)), new(new DateTime(2024, 1, 2), new Money(11))]),
+            [vale3.AssetSymbol] = AssetWith(vale3.AssetSymbol, 12m, [])
+        };
+
+        var result = _calculator.Calculate(portfolio, assets, new DateTime(2024, 1, 2));
+
+        Assert.Equal(200m, result.TotalInvestment);
+        Assert.Equal(240m, result.CurrentValue);
+        Assert.Equal(20m, result.TotalReturn);
+        Assert.Null(result.Volatility);
+    }
+
+    [Fact]
     public void Calculate_AvoidsDivisionByZeroForZeroInvestment()
     {
         var portfolio = PortfolioWith(new Position(new AssetSymbol("PETR4"), new Quantity(0), new Money(10), new Percentage(100)), 0m);

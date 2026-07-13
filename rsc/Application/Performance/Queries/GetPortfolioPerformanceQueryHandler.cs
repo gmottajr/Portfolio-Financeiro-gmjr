@@ -38,7 +38,11 @@ public sealed class GetPortfolioPerformanceQueryHandler(
             var assets = await LoadAssetsAsync(portfolio, ct);
             logger.LogInformation("Loaded {AssetCount} assets required for performance analysis.", assets.Count);
 
-            var response = calculator.Calculate(portfolio, assets, DateTime.UtcNow);
+            // Current prices in the seed are a market snapshot. Use its latest
+            // timestamp so annualized returns stay reproducible instead of
+            // changing with the API server clock.
+            var calculationDate = assets.Values.Max(asset => asset.LastUpdated);
+            var response = calculator.Calculate(portfolio, assets, calculationDate);
             logger.LogInformation(
                 "Portfolio performance analysis completed. CurrentValue: {CurrentValue}; TotalReturn: {TotalReturn}; Volatility: {Volatility}.",
                 response.CurrentValue,
