@@ -70,6 +70,12 @@ Invoke-RestMethod "{url}/api/portfolios/1/rebalancing?mode=cpSat"
 
 O cálculo de rebalanceamento usa Strategy + Registry/Factory + Orchestrator. `ExhaustiveSubsetOptimizationStrategy` compara subconjuntos, `QuadraticProgrammingOptimizationStrategy` minimiza erro quadrático e turnover, e `CpSatOptimizationStrategy` usa o solver inteiro Google OR-Tools. Todos os planos passam pelo mesmo avaliador de tracking error, custo, benefício líquido e autofinanciamento antes da seleção.
 
+#### Decisão deliberada: por que três algoritmos de rebalanceamento?
+
+Optei deliberadamente por implementar as três estratégias porque o enunciado apresenta a otimização avançada de rebalanceamento como diferencial, e identifiquei uma oportunidade concreta de substituir uma heurística isolada por uma solução mais sofisticada e, ao mesmo tempo, aplicar Strategy + Registry/Factory + Orchestrator em um problema no qual os algoritmos são realmente intercambiáveis. Não se trata de uma expansão lateral do escopo: as três implementações atendem ao mesmo caso de uso, compartilham contrato, regras, métricas e validações, e aprofundam diretamente o requisito de otimização proposto.
+
+Financeiramente, nenhuma técnica domina as demais em todos os portfólios. A busca exaustiva oferece maior explicabilidade em universos pequenos ao comparar todos os subconjuntos elegíveis; a programação quadrática produz uma solução contínua que equilibra aderência ao alvo e turnover; e o CP-SAT representa valores monetários e decisões de ativação de trades de forma discreta, incorporando valor mínimo, custos e autofinanciamento. Disponibilizar `exhaustive`, `quadraticProgramming`, `cpSat` e a comparação `compareAll` permite ao usuário avaliar explicitamente o compromisso entre tracking error, custo, quantidade de operações e benefício líquido, reduz a dependência de um único modelo e torna auditável a escolha da recomendação final.
+
 ### Configuração do banco InMemory
 
 Há um único arquivo de configuração: [appsettings.json](rsc/Portfolio-Financeiro-WebApplication/appsettings.json). Para o provider EF Core InMemory não existe connection string; o identificador equivalente é o nome do banco.

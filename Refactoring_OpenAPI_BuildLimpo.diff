@@ -1,0 +1,299 @@
+diff --git a/README.md b/README.md
+index 4871de4..479efaa 100644
+--- a/README.md
++++ b/README.md
+@@ -112,13 +112,13 @@ A categoria `Application` está configurada em nível `Debug` no único `appsett
+ 
+ ### Estado da entrega
+ 
+-- AnalyticsController com três endpoints funcionais, Swagger e testes de integração.
++- AnalyticsController com três endpoints funcionais, Swagger com schema e exemplo completo da resposta de performance, e testes de integração.
+ - Seed automático via `IDataSower` na inicialização.
+ - Algoritmos financeiros, validações, tratamento de dados faltantes e logs estruturados.
+ - Três estratégias de rebalanceamento comparáveis, endpoint idempotente e rate limit por IP.
+ - Testes unitários e de integração para cálculos, regras de negócio, persistência e API.
+ 
+-Na última validação local, passaram 44 testes de `Application.Tests`, 14 de `Persistence.Tests`, 24 de `Api.Tests` e 216 testes na solução completa.
++Na última validação local, passaram 45 testes de `Application.Tests`, 14 de `Persistence.Tests`, 25 de `Api.Tests` e 219 testes na solução completa. O build completo termina com zero erros e zero warnings.
+ 
+ ---
+ 
+diff --git a/rsc/Abstractions/04-Domain/AggregateRoot.cs b/rsc/Abstractions/04-Domain/AggregateRoot.cs
+index d56eb60..bfe982f 100644
+--- a/rsc/Abstractions/04-Domain/AggregateRoot.cs
++++ b/rsc/Abstractions/04-Domain/AggregateRoot.cs
+@@ -20,6 +20,8 @@ public abstract class AggregateRoot<TKey>: AuditableEntity
+ 
+     public override int GetHashCode()
+     {
+-        return EqualityComparer<TKey>.Default.GetHashCode(Id);
++        return Id is null
++            ? 0
++            : EqualityComparer<TKey>.Default.GetHashCode(Id);
+     }
+ }
+diff --git a/rsc/Core/Exceptions/DomainException.cs b/rsc/Core/Exceptions/DomainException.cs
+index 8fcfaba..ba086db 100644
+--- a/rsc/Core/Exceptions/DomainException.cs
++++ b/rsc/Core/Exceptions/DomainException.cs
+@@ -1,7 +1,6 @@
+ ﻿using System;
+ using System.Collections.Generic;
+ using System.Linq;
+-using System.Runtime.Serialization;
+ using System.Text;
+ using System.Threading.Tasks;
+ 
+@@ -20,8 +19,4 @@ public class DomainException : Exception
+     public DomainException(string? message, Exception? innerException) : base(message, innerException)
+     {
+     }
+-
+-    protected DomainException(SerializationInfo info, StreamingContext context) : base(info, context)
+-    {
+-    }
+ }
+diff --git a/rsc/Models/Asset.cs b/rsc/Models/Asset.cs
+index 296fa86..70682ce 100644
+--- a/rsc/Models/Asset.cs
++++ b/rsc/Models/Asset.cs
+@@ -18,10 +18,10 @@ namespace Models;
+ public sealed class Asset : AggregateRoot<AssetSymbol>
+ {
+     public AssetSymbol Symbol => Id;
+-    public string Name { get; }
+-    public string Type { get; }
+-    public string Sector { get; }
+-    public Money CurrentPrice { get; private set; }
++    public string Name { get; } = null!;
++    public string Type { get; } = null!;
++    public string Sector { get; } = null!;
++    public Money CurrentPrice { get; private set; } = null!;
+ 
+     /// <summary>
+     /// Reaproveita o UpdatedAt herdado de AuditableEntity em vez de um
+@@ -34,12 +34,7 @@ public sealed class Asset : AggregateRoot<AssetSymbol>
+     public IReadOnlyList<PricePoint> PriceHistory => _priceHistory.AsReadOnly();
+ 
+     // Necessário para materialização pelo Entity Framework Core.
+-    private Asset()
+-    {
+-        Name = null!;
+-        Type = null!;
+-        Sector = null!;
+-    }
++    private Asset() { }
+ 
+     public Asset(AssetSymbol symbol, string name, string type, string sector, Money currentPrice, DateTime lastUpdated)
+     {
+diff --git a/rsc/Models/Portfolio.cs b/rsc/Models/Portfolio.cs
+index 63f36dc..6d3a17f 100644
+--- a/rsc/Models/Portfolio.cs
++++ b/rsc/Models/Portfolio.cs
+@@ -16,9 +16,9 @@ namespace Models;
+ /// </summary>
+ public sealed class Portfolio : AggregateRoot<int>
+ {
+-    public string Name { get; }
+-    public string UserId { get; }
+-    public Money TotalInvestment { get; }
++    public string Name { get; } = null!;
++    public string UserId { get; } = null!;
++    public Money TotalInvestment { get; } = null!;
+ 
+     /// <summary>
+     /// Data de criação de NEGÓCIO do portfólio (vem do seed). Não usa o
+@@ -34,11 +34,7 @@ public sealed class Portfolio : AggregateRoot<int>
+     public IReadOnlyList<Position> Positions => _positions.AsReadOnly();
+ 
+     // Necessário para materialização pelo Entity Framework Core.
+-    private Portfolio()
+-    {
+-        Name = null!;
+-        UserId = null!;
+-    }
++    private Portfolio() { }
+ 
+     public Portfolio(string name, string userId, Money totalInvestment, DateTime? portfolioCreatedAt, IEnumerable<Position> positions)
+     {
+diff --git a/rsc/Models/Position.cs b/rsc/Models/Position.cs
+index e9fd5c3..c9792c1 100644
+--- a/rsc/Models/Position.cs
++++ b/rsc/Models/Position.cs
+@@ -19,10 +19,10 @@ namespace Models;
+ /// </summary>
+ public sealed class Position : AuditableEntity
+ {
+-    public AssetSymbol AssetSymbol { get; }
+-    public Quantity Quantity { get; private set; }
+-    public Money AveragePrice { get; private set; }
+-    public Percentage TargetAllocation { get; private set; }
++    public AssetSymbol AssetSymbol { get; } = null!;
++    public Quantity Quantity { get; private set; } = null!;
++    public Money AveragePrice { get; private set; } = null!;
++    public Percentage TargetAllocation { get; private set; } = null!;
+     public DateTime? LastTransaction { get; private set; }
+ 
+     // Necessário para materialização pelo Entity Framework Core.
+diff --git a/rsc/Portfolio-Financeiro-WebApplication/OpenApi/PerformanceResponseExampleOperationFilter.cs b/rsc/Portfolio-Financeiro-WebApplication/OpenApi/PerformanceResponseExampleOperationFilter.cs
+new file mode 100644
+index 0000000..3588e4c
+--- /dev/null
++++ b/rsc/Portfolio-Financeiro-WebApplication/OpenApi/PerformanceResponseExampleOperationFilter.cs
+@@ -0,0 +1,64 @@
++using Microsoft.OpenApi.Any;
++using Microsoft.OpenApi.Models;
++using Portfolio_Financeiro_WebApplication.Controllers;
++using Swashbuckle.AspNetCore.SwaggerGen;
++
++namespace Portfolio_Financeiro_WebApplication.OpenApi;
++
++/// <summary>
++/// Complements the generated performance schema with a representative payload.
++/// The values mirror the seeded portfolio so Swagger UI documents units, signs,
++/// nullable metrics and the nested position collection as they appear on the wire.
++/// </summary>
++public sealed class PerformanceResponseExampleOperationFilter : IOperationFilter
++{
++    public void Apply(OpenApiOperation operation, OperationFilterContext context)
++    {
++        if (context.MethodInfo.DeclaringType != typeof(AnalyticsController)
++            || context.MethodInfo.Name != nameof(AnalyticsController.GetPerformance)
++            || !operation.Responses.TryGetValue(StatusCodes.Status200OK.ToString(), out var response))
++        {
++            return;
++        }
++
++        var example = CreateExample();
++        foreach (var mediaType in response.Content
++                     .Where(content => content.Key.Contains("json", StringComparison.OrdinalIgnoreCase))
++                     .Select(content => content.Value))
++        {
++            mediaType.Example = example;
++        }
++    }
++
++    private static OpenApiObject CreateExample() => new()
++    {
++        ["totalInvestment"] = new OpenApiDouble(100_000.00),
++        ["currentValue"] = new OpenApiDouble(80_940.00),
++        ["totalReturn"] = new OpenApiDouble(-19.0600),
++        ["totalReturnAmount"] = new OpenApiDouble(-19_060.00),
++        ["annualizedReturn"] = new OpenApiDouble(-25.2678),
++        ["volatility"] = new OpenApiDouble(1.2384),
++        ["positionsPerformance"] = new OpenApiArray
++        {
++            CreatePosition("WEGE3", 9_000.00, 8_570.00, -4.7778, 10.5881),
++            CreatePosition("ITUB4", 16_800.00, 19_260.00, 14.6429, 23.7954),
++            CreatePosition("BBDC4", 18_000.00, 15_800.00, -12.2222, 19.5206),
++            CreatePosition("VALE3", 18_000.00, 19_560.00, 8.6667, 24.1660),
++            CreatePosition("PETR4", 15_000.00, 17_750.00, 18.3333, 21.9298)
++        }
++    };
++
++    private static OpenApiObject CreatePosition(
++        string symbol,
++        double investedAmount,
++        double currentValue,
++        double returnPercentage,
++        double weight) => new()
++    {
++        ["symbol"] = new OpenApiString(symbol),
++        ["investedAmount"] = new OpenApiDouble(investedAmount),
++        ["currentValue"] = new OpenApiDouble(currentValue),
++        ["return"] = new OpenApiDouble(returnPercentage),
++        ["weight"] = new OpenApiDouble(weight)
++    };
++}
+diff --git a/rsc/Portfolio-Financeiro-WebApplication/Program.cs b/rsc/Portfolio-Financeiro-WebApplication/Program.cs
+index 6ec1b4d..292f209 100644
+--- a/rsc/Portfolio-Financeiro-WebApplication/Program.cs
++++ b/rsc/Portfolio-Financeiro-WebApplication/Program.cs
+@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
+ using DAL.Sower;
+ using IoC;
+ using Microsoft.AspNetCore.RateLimiting;
++using Portfolio_Financeiro_WebApplication.OpenApi;
+ 
+ var builder = WebApplication.CreateBuilder(args);
+ 
+@@ -33,7 +34,11 @@ builder.Services.AddRateLimiter(options =>
+ });
+ // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+ builder.Services.AddEndpointsApiExplorer();
+-builder.Services.AddSwaggerGen();
++builder.Services.AddSwaggerGen(options =>
++{
++    options.SupportNonNullableReferenceTypes();
++    options.OperationFilter<PerformanceResponseExampleOperationFilter>();
++});
+ 
+ var app = builder.Build();
+ 
+diff --git a/tests/Abstractions.Tests/AggregateRootTests.cs b/tests/Abstractions.Tests/AggregateRootTests.cs
+index f0b69a7..d72e2ee 100644
+--- a/tests/Abstractions.Tests/AggregateRootTests.cs
++++ b/tests/Abstractions.Tests/AggregateRootTests.cs
+@@ -18,8 +18,21 @@ public sealed class AggregateRootTests
+         Assert.False(first.Equals("10"));
+     }
+ 
++    [Fact]
++    public void GetHashCode_ReturnsZeroForNullKey()
++    {
++        var aggregate = new NullableKeyAggregate(null);
++
++        Assert.Equal(0, aggregate.GetHashCode());
++    }
++
+     private sealed class TestAggregate : AggregateRoot<int>
+     {
+         public TestAggregate(int id) => Id = id;
+     }
++
++    private sealed class NullableKeyAggregate : AggregateRoot<string>
++    {
++        public NullableKeyAggregate(string? id) => Id = id!;
++    }
+ }
+diff --git a/tests/Api.Tests/PerformanceEndpointIntegrationTests.cs b/tests/Api.Tests/PerformanceEndpointIntegrationTests.cs
+index e9a9aab..d4aac59 100644
+--- a/tests/Api.Tests/PerformanceEndpointIntegrationTests.cs
++++ b/tests/Api.Tests/PerformanceEndpointIntegrationTests.cs
+@@ -13,8 +13,11 @@ using Microsoft.Extensions.DependencyInjection;
+ using Microsoft.Extensions.DependencyInjection.Extensions;
+ using Microsoft.Extensions.Configuration;
+ using Microsoft.Extensions.Hosting;
++using Microsoft.OpenApi.Any;
++using Microsoft.OpenApi.Models;
+ using Models;
+ using SharedKernel.ValueObjects;
++using Swashbuckle.AspNetCore.Swagger;
+ 
+ namespace Api.Tests;
+ 
+@@ -68,6 +71,24 @@ public sealed class PerformanceEndpointIntegrationTests : IClassFixture<ApiWebAp
+         Assert.NotNull(performance.Volatility);
+     }
+ 
++    [Fact]
++    public void OpenApi_PerformanceSuccessResponseContainsSchemaAndRepresentativeExample()
++    {
++        var swagger = _factory.Services
++            .GetRequiredService<ISwaggerProvider>()
++            .GetSwagger("v1");
++        var operation = swagger.Paths["/api/portfolios/{id}/performance"]
++            .Operations[OperationType.Get];
++        var jsonResponse = operation.Responses["200"].Content["application/json"];
++
++        Assert.Equal("PortfolioPerformanceResponse", jsonResponse.Schema.Reference.Id);
++
++        var example = Assert.IsType<OpenApiObject>(jsonResponse.Example);
++        Assert.Equal(100_000d, Assert.IsType<OpenApiDouble>(example["totalInvestment"]).Value);
++        Assert.Equal(-19.06d, Assert.IsType<OpenApiDouble>(example["totalReturn"]).Value);
++        Assert.Equal(5, Assert.IsType<OpenApiArray>(example["positionsPerformance"]).Count);
++    }
++
+     [Fact]
+     public async Task GetPerformance_ReturnsNotFoundForUnknownPortfolio()
+     {
