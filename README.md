@@ -8,11 +8,7 @@ API .NET 8 para analisar performance, risco e rebalanceamento de carteiras pré-
 
 - .NET SDK 8.0 ou superior compatível com `net8.0`.
 - O modo CP-SAT usa o runtime nativo do Google OR-Tools; no Windows, o Microsoft Visual C++ Redistributable 2022 x64 deve estar disponível.
-- Abra o PowerShell na pasta do projeto antes de executar os comandos:
-
-```powershell
-cd C:\GmDev\Portfolio-Financeiro-gmjr
-```
+- Execute os comandos abaixo a partir da raiz do repositório.
 
 ### Executar a API
 
